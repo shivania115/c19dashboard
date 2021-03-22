@@ -25,13 +25,13 @@ b <- b %>%
   dplyr::filter(str_detect(var,".xlsx"))
 
 # Download files ----------
-
+path_cpr_raw <- paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports")
 for (f in 1:nrow(b)){
 # for (f in 1:3){
   file_name = str_replace(b$file_name[f],pattern = "filename=","")
   
   download.file(paste0("https://beta.healthdata.gov/",b$var[f]),
-                destfile = paste0(path_cpr_folder,"/raw/",file_name),mode = "wb")
+                destfile = paste0(path_cpr_raw,"/",file_name),mode = "wb")
   
   
 }
