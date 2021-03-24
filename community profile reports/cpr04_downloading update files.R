@@ -49,7 +49,7 @@ for (f in 1:nrow(new_files)){
   file_name = str_replace(new_files$file_name[f],pattern = "filename=","")
   
   download.file(paste0("https://beta.healthdata.gov/",b$var[f]),
-                destfile = paste0(path_cpr_raw,file_name),mode = "wb")
+                destfile = paste0(path_cpr_raw,"/",file_name),mode = "wb")
   
 }
 
@@ -64,9 +64,12 @@ update_files <- list.files(path_cpr_raw)
 update_files = update_files[regexpr("\\.xlsx",update_files)>0]
 update_files = update_files[!update_files %in% existing_files]
 
-source(paste0(path_c19dashboard_repo,"/package/replacing a dataset.R"))
-source(paste0(path_c19dashboard_repo,"/community profile reports/cpr05_daily update for counties.R"))
-source(paste0(path_c19dashboard_repo,"/community profile reports/cpr06_daily update for states.R"))
+if(length(update_files)>0){
+  source(paste0(path_c19dashboard_repo,"/package/replacing a dataset.R"))
+  source(paste0(path_c19dashboard_repo,"/community profile reports/cpr05_daily update for county dataset.R"))
+  source(paste0(path_c19dashboard_repo,"/community profile reports/cpr06_daily update for state dataset.R"))
+  
+}
 
 
 

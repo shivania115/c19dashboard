@@ -22,15 +22,17 @@ counties_date_range_clean_updated <- bind_rows(readRDS(paste0(path_cpr_processed
                                                counties_date_range_clean)
 counties_error_list_updated <- bind_rows(readRDS(paste0(path_cpr_processed,"/counties_error_list.RDS")),
                                          counties_error_list)
-
-replace_dataset(counties_df_clean_updated,
-                save_path = paste0(path_cpr_processed),
-                save_name = "counties_df_clean",save_type = ".RDS",all_formats = TRUE)
-replace_dataset(counties_date_range_clean_updated,
-                save_path = paste0(path_cpr_processed),
-                save_name = "counties_date_range_clean",save_type = ".RDS",all_formats = TRUE)
-replace_dataset(counties_error_list_updated,
-                save_path = paste0(path_cpr_processed),
-                save_name = "counties_error_list",save_type = ".RDS",all_formats = TRUE)
+if(nrow(counties_error_list)==0){
+  replace_dataset(counties_df_clean_updated,
+                  save_path = paste0(path_cpr_processed),
+                  save_name = "counties_df_clean",save_type = ".RDS",all_formats = TRUE)
+  replace_dataset(counties_date_range_clean_updated,
+                  save_path = paste0(path_cpr_processed),
+                  save_name = "counties_date_range_clean",save_type = ".RDS",all_formats = TRUE)
+  replace_dataset(counties_error_list_updated,
+                  save_path = paste0(path_cpr_processed),
+                  save_name = "counties_error_list",save_type = ".RDS",all_formats = TRUE)
+  
+}
 
 
