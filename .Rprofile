@@ -15,4 +15,22 @@ if(Sys.info()["user"]=="JVARGH7"){
   
   path_cpr_folder <- paste0(path_c19dashboard_shared_folder,"/Community Profile Reports")
 
-}  
+}
+
+if(Sys.info()["user"]==""){
+  library(ggplot2)
+  library(scales)
+  library(tidyverse)
+  library(plotly)
+  # library(dygraphs)
+  
+  options(scipen=999)
+  
+  path_c19dashboard_shared_folder <- ""
+  path_c19dashboard_old_folder <- ""
+  path_c19dashboard_repo <- ""
+  path_c19dashboard_personal_folder <- ""
+  
+  path_cpr_folder <- paste0(path_c19dashboard_shared_folder,"/Community Profile Reports")
+  
+} 

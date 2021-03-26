@@ -70,6 +70,3 @@ if(length(update_files)>0){
   source(paste0(path_c19dashboard_repo,"/community profile reports/cpr06_daily update for state dataset.R"))
   
 }
-
-
-

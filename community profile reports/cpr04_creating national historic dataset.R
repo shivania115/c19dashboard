@@ -28,16 +28,17 @@ national_cpr_cleaned_list <- map(f,
 
 national_df_clean <- map_dfr(national_cpr_cleaned_list,function(x) x[[1]])
 national_date_range_clean <- map_dfr(national_cpr_cleaned_list,function(x) x[[2]])
-national_error_list <- map_dfr(national_cpr_cleaned_list,function(x) x[[3]])
+national_error_list <- map_dfr(national_cpr_cleaned_list,function(x) x[[3]]) %>% 
+  dplyr::select(-starts_with(".."))
 
 # Save ----------------
-write.csv(national_error_list,paste0(path_cpr_processed,"/national_error_list.csv"))
+write.csv(national_error_list,paste0(path_cpr_processed,folder_name,"/national_error_list.csv"))
 
 
-saveRDS(national_df_clean,paste0(path_cpr_processed,"/national_df_clean.RDS"))
-saveRDS(national_date_range_clean,paste0(path_cpr_processed,"/national_date_range_clean.RDS"))
-saveRDS(national_error_list,paste0(path_cpr_processed,"/national_error_list.RDS"))
+saveRDS(national_df_clean,paste0(path_cpr_processed,folder_name,"/national_df_clean.RDS"))
+saveRDS(national_date_range_clean,paste0(path_cpr_processed,folder_name,"/national_date_range_clean.RDS"))
+saveRDS(national_error_list,paste0(path_cpr_processed,folder_name,"/national_error_list.RDS"))
 
-haven::write_dta(national_df_clean,paste0(path_cpr_processed,"/national_df_clean.dta"),version=12)
-haven::write_dta(national_date_range_clean,paste0(path_cpr_processed,"/national_date_range_clean.dta"),version=12)
-haven::write_dta(national_error_list,paste0(path_cpr_processed,"/national_error_list.dta"),version=12)
+haven::write_dta(national_df_clean,paste0(path_cpr_processed,folder_name,"/national_df_clean.dta"),version=12)
+haven::write_dta(national_date_range_clean,paste0(path_cpr_processed,folder_name,"/national_date_range_clean.dta"),version=12)
+haven::write_dta(national_error_list,paste0(path_cpr_processed,folder_name,"/national_error_list.dta"),version=12)

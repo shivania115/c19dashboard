@@ -9,22 +9,24 @@
 # - Counties: Douglas County, GA ()
 # - National: YES
 
-
+raw_files <- list.files(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports"))
 file_dates <- sapply(raw_files,function(x) str_extract(x,"[0-9]+") %>% lubridate::ymd(.))
 raw_files <- raw_files[!is.na(file_dates)]
 latest_file <- raw_files[which.max(file_dates)]
+folder_name = paste0("/",as.Date(max(file_dates),origin = "1970-01-01"),"/")
+
 
 gr01_df <- bind_rows(
-  readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/national_df_clean.RDS")) %>%
+  readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"national_df_clean.RDS")) %>%
     dplyr::filter(file_name == latest_file) %>% 
     mutate(state = NA,
            national = 1,
            county = NA) %>%
     rename(viral_positivity_rate_7day = N08,
            rtpcr_per100k_7day = N10) %>%
-    dplyr::select(national,state,county,N01,viral_positivity_rate_7day,rtpcr_per100k_7day) %>% 
+    dplyr::select(national,state,county,N01,viral_positivity_rate_7day,rtpcr_per100k_7day,date_of_file) %>% 
     rename(date = N01),
-  readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/states_df_clean.RDS")) %>%
+  readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"states_df_clean.RDS")) %>%
     dplyr::filter(S02 == "GA") %>%
     mutate(state = 13,
            county = NA) %>%
@@ -32,7 +34,7 @@ gr01_df <- bind_rows(
            rtpcr_per100k_7day = S23) %>%
     dplyr::select(state,county,date_of_file,viral_positivity_rate_7day,rtpcr_per100k_7day) %>% 
     mutate(date = date_of_file),
-  readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/counties_df_clean.RDS")) %>%
+  readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"counties_df_clean.RDS")) %>%
     dplyr::filter(V02 == 13097) %>%
     mutate(state = substr(V02,1,2) %>% as.numeric(),
            county = substr(V02,3,5) %>% as.numeric()) %>%
@@ -61,4 +63,4 @@ gr01_df %>%
   # https://stackoverflow.com/questions/11748384/formatting-dates-on-x-axis-in-ggplot2
   scale_x_date(labels = date_format("%b %d %Y"))
 
-
+write.csv(gr01_df,paste0(path_c19dashboard_shared_folder,"/New Features/Test positivity trends/gr01_test positivity trends.csv"),row.names = FALSE)

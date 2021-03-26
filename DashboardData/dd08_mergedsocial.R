@@ -15,3 +15,11 @@ mergedsocial <- acs2018_5yr_all %>%
             by=c("nation","state","county")) %>% 
   dplyr::filter(!is.na(nation)|!is.na(state)|!is.na(county))
 
+
+# mergedsocial is exported as nationalraw0.csv
+
+# pending: Variable labelling  ---------
+var_labels_mergedsocial <- read.table(paste0(path_c19dashboard_repo,"/DashboardData/aux01_variable labels"),sep="=",
+                                      col.names = c("variable","label"))
+
+

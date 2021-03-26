@@ -1,8 +1,8 @@
 # Function for generating cleaned CPR datasets -------------
 
 clean_cpr <- function(file_name){
-  path_cpr_raw <- paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports")
-  path_cpr_processed <- paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports")
+  path_cpr_raw <- paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports/")
+  path_cpr_processed <- paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/")
   
   
   df = readxl::read_excel(paste0(path_cpr_raw,file_name),sheet = "Counties",skip = 1,col_names = TRUE)
@@ -58,8 +58,8 @@ clean_cpr <- function(file_name){
 
 
 state_cpr <- function(file_name){
-  path_cpr_raw <- paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports")
-  path_cpr_processed <- paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports")
+  path_cpr_raw <- paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports/")
+  path_cpr_processed <- paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/")
   
   
   df = readxl::read_excel(paste0(path_cpr_raw,file_name),sheet = "States",skip = 1,col_names = TRUE)  

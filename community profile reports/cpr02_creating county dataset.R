@@ -26,12 +26,12 @@ date_range_clean <- map_dfr(cpr_cleaned_list,function(x) x[[2]])
 error_list <- map_dfr(cpr_cleaned_list,function(x) x[[3]])
 
 # Save ----------------
-write.csv(error_list,paste0(path_cpr_processed,"/counties_error_list.csv"))
+write.csv(error_list,paste0(path_cpr_processed,folder_name,"/counties_error_list.csv"))
 
-saveRDS(df_clean,paste0(path_cpr_processed,"/counties_df_clean.RDS"))
-saveRDS(date_range_clean,paste0(path_cpr_processed,"/counties_date_range_clean.RDS"))
-saveRDS(error_list,paste0(path_cpr_processed,"/counties_error_list.RDS"))
+saveRDS(df_clean,paste0(path_cpr_processed,folder_name,"/counties_df_clean.RDS"))
+saveRDS(date_range_clean,paste0(path_cpr_processed,folder_name,"/counties_date_range_clean.RDS"))
+saveRDS(error_list,paste0(path_cpr_processed,folder_name,"/counties_error_list.RDS"))
 
-haven::write_dta(df_clean,paste0(path_cpr_processed,"/counties_df_clean.dta"),version=12)
-haven::write_dta(date_range_clean,paste0(path_cpr_processed,"/counties_date_range_clean.dta"),version=12)
-haven::write_dta(error_list,paste0(path_cpr_processed,"/counties_error_list.dta"),version=12)
+haven::write_dta(df_clean,paste0(path_cpr_processed,folder_name,"/counties_df_clean.dta"),version=12)
+haven::write_dta(date_range_clean,paste0(path_cpr_processed,folder_name,"/counties_date_range_clean.dta"),version=12)
+haven::write_dta(error_list,paste0(path_cpr_processed,folder_name,"/counties_error_list.dta"),version=12)
