@@ -18,7 +18,10 @@ states_cpr_cleaned_list <- map(f,
                         }
 )
 
-states_df_clean <- map_dfr(states_cpr_cleaned_list,function(x) x[[1]])
+states_df_clean <- map_dfr(states_cpr_cleaned_list,function(x) x[[1]]) %>% 
+  mutate(state = cdlTools::fips(S02),
+         county = NA_real_)
+  
 states_date_range_clean <- map_dfr(states_cpr_cleaned_list,function(x) x[[2]])
 states_error_list <- map_dfr(states_cpr_cleaned_list,function(x) x[[3]])
 

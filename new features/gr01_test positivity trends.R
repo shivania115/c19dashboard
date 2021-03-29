@@ -16,6 +16,22 @@ latest_file <- raw_files[which.max(file_dates)]
 folder_name = paste0("/",as.Date(max(file_dates),origin = "1970-01-01"),"/")
 
 
+# Number of counties with test positivity data -----------
+
+counties_df <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"counties_df_clean.RDS"))
+
+counties_df %>%
+  rename(viral_positivity_rate_7day = V33,
+         rtpcr_per100k_7day = V35) %>%
+  dplyr::select(state,county,date_of_file,viral_positivity_rate_7day,rtpcr_per100k_7day) %>% 
+  mutate(date = date_of_file) %>% 
+  group_by(state,county) %>% 
+  dplyr::summarize(n_available = sum(!is.na(viral_positivity_rate_7day))) %>% 
+  ggplot(data=.,aes(x=n_available)) +
+  geom_histogram()
+
+
+# Example Data ------------
 gr01_df <- bind_rows(
   readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"national_df_clean.RDS")) %>%
     dplyr::filter(file_name == latest_file) %>% 
@@ -27,17 +43,13 @@ gr01_df <- bind_rows(
     dplyr::select(national,state,county,N01,viral_positivity_rate_7day,rtpcr_per100k_7day,date_of_file) %>% 
     rename(date = N01),
   readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"states_df_clean.RDS")) %>%
-    dplyr::filter(S02 == "GA") %>%
-    mutate(state = 13,
-           county = NA) %>%
+    # dplyr::filter(S02 == "GA") %>%
     rename(viral_positivity_rate_7day = S21,
            rtpcr_per100k_7day = S23) %>%
     dplyr::select(state,county,date_of_file,viral_positivity_rate_7day,rtpcr_per100k_7day) %>% 
     mutate(date = date_of_file),
   readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"counties_df_clean.RDS")) %>%
-    dplyr::filter(V02 == 13097) %>%
-    mutate(state = substr(V02,1,2) %>% as.numeric(),
-           county = substr(V02,3,5) %>% as.numeric()) %>%
+    # dplyr::filter(V02 == 13097) %>%
     rename(viral_positivity_rate_7day = V33,
            rtpcr_per100k_7day = V35) %>%
     dplyr::select(state,county,date_of_file,viral_positivity_rate_7day,rtpcr_per100k_7day) %>% 
@@ -45,9 +57,10 @@ gr01_df <- bind_rows(
   
 )
 
-# Figure -----------
+# Example Figure -----------
 gr01_df %>% 
   arrange(date) %>% 
+  dplyr::filter(national == 1 |(state == 13 & is.na(county))| (state==13 & county == 97)) %>% 
   dplyr::filter(date >= "2020-12-01") %>% 
   mutate(region = case_when(national == 1 ~ 1,
                             state == 13 & is.na(county) ~ 2,
@@ -63,4 +76,10 @@ gr01_df %>%
   # https://stackoverflow.com/questions/11748384/formatting-dates-on-x-axis-in-ggplot2
   scale_x_date(labels = date_format("%b %d %Y"))
 
-write.csv(gr01_df,paste0(path_c19dashboard_shared_folder,"/New Features/Test positivity trends/gr01_test positivity trends.csv"),row.names = FALSE)
+write.csv(gr01_df,paste0(path_c19dashboard_shared_folder,"/Dashboard Features/Test positivity trends/gr01_test positivity trends.csv"),row.names = FALSE)
+
+# ts_example <- read_csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/covidtimeseries.csv"))
+
+
+
+

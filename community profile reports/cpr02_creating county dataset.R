@@ -21,7 +21,12 @@ cpr_cleaned_list <- map(f,
                     }
                     )
 
-df_clean <- map_dfr(cpr_cleaned_list,function(x) x[[1]])
+df_clean <- map_dfr(cpr_cleaned_list,function(x) x[[1]]) %>% 
+  mutate(fips = sprintf("%05d",V02)) %>%
+  mutate(state = substr(fips,1,2) %>% as.numeric(),
+         county = substr(fips,3,5) %>% as.numeric()) %>% 
+  dplyr::select(-fips)
+
 date_range_clean <- map_dfr(cpr_cleaned_list,function(x) x[[2]])
 error_list <- map_dfr(cpr_cleaned_list,function(x) x[[3]])
 

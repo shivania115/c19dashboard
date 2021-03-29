@@ -46,10 +46,12 @@ clean_cpr <- function(file_name){
     dplyr::filter(is.na(variable))
   
   names(df) <- colname_df$variable
+  
+  df$file_name = file_name
   date_of_file = str_extract(file_name,"[0-9]+")
   
   df$date_of_file = lubridate::ymd(date_of_file) - 1
-  unique_date_ranges$date_of_file = lubridate::ymd(date_of_file)
+  unique_date_ranges$date_of_file = lubridate::ymd(date_of_file) - 1
   return(list(df,unique_date_ranges,error_list))
   
   
@@ -108,7 +110,7 @@ state_cpr <- function(file_name){
   date_of_file = str_extract(file_name,"[0-9]+")
   
   df$date_of_file = lubridate::ymd(date_of_file) - 1
-  unique_date_ranges$date_of_file = lubridate::ymd(date_of_file)
+  unique_date_ranges$date_of_file = lubridate::ymd(date_of_file) - 1
   return(list(df,unique_date_ranges,error_list))
   
   
@@ -189,7 +191,7 @@ national_cpr <- function(file_name){
   date_of_file = str_extract(file_name,"[0-9]+")
   
   df$date_of_file = lubridate::ymd(date_of_file) - 1
-  unique_date_ranges$date_of_file = lubridate::ymd(date_of_file)
+  unique_date_ranges$date_of_file = lubridate::ymd(date_of_file) - 1
   return(list(df,unique_date_ranges,error_list))
   
   
