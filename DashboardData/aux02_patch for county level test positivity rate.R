@@ -56,7 +56,9 @@ gr01_df <- counties_df %>%
          hospTot = cumsum(hospDaily_imputed)
          ) %>% 
   mutate(percentPositive = totalpositives*100/totaltests) %>% 
-  mutate(below10pctPositive = ifelse(percentPositive <= 10,"Yes","No")) %>% 
+  mutate(below10pctPositive = ifelse(percentPositive <= 10,"Yes","No"),
+         positives_per100Ktests = V33*(10)^5,
+         positives_per100Kcumulative_tests = (percentPositive*(10)^5)/100) %>% 
   
   # renaming positivetoday --> positive
   rename(positive = positivetoday) %>% 
@@ -64,10 +66,13 @@ gr01_df <- counties_df %>%
   dplyr::select(date,state,county,statename,countyname,
                 positive,percentPositive,below10pctPositive,
                 # negative, recovered,
-                hospTot, hospDaily, totaltests
+                hospTot, hospDaily, totaltests,
+                positives_per100Ktests,positives_per100Kcumulative_tests
                 ) %>% 
-  mutate_at(vars(positive,percentPositive,hospTot,hospDaily,totaltests),~case_when(is.na(.) ~ -1,
-                                                                                   TRUE ~ .))
+  mutate_at(vars(positive,percentPositive,hospTot,hospDaily,totaltests,
+                 positives_per100Ktests,positives_per100Kcumulative_tests
+                 ),~case_when(is.na(.) ~ -1,
+                              TRUE ~ .))
 
 write.csv(gr01_df,paste0(path_c19dashboard_shared_folder,"/Dashboard Features/Test positivity trends/gr01_PATCH for county level test positivity and hospitalization.csv"),row.names = FALSE)
 
