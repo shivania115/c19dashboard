@@ -27,3 +27,9 @@ CDCdiabetes <- bind_rows(
 )
 
 
+# SAVE ---------
+
+saveRDS(CDCdiabetes,paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC Diabetes Surveillance/CDCdiabetes.RDS"))
+write.csv(CDCdiabetes,paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC Diabetes Surveillance/CDCdiabetes.csv"),row.names = FALSE)
+write.csv(head(CDCdiabetes,n=1000),paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC Diabetes Surveillance/EXAMPLE_CDCdiabetes.csv"),row.names = FALSE)
+

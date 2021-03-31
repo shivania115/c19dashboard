@@ -4,7 +4,7 @@
 # *******************************************************************;
 
 
-sahie_2018 <- haven::read_sas(paste0(path_c19dashboard_old_folder,"/SAHIE/sahie_2018_new.sas7bdat")) %>% 
+sahie_2018 <- haven::read_sas(paste0(path_c19dashboard_shared_folder,"/Data/Raw/SAHIE/sahie_2018_new.sas7bdat")) %>% 
   mutate(county = case_when(countyfips == 0 ~ NA_real_,
                             TRUE ~ countyfips),
          nation = NA_real_
@@ -31,6 +31,12 @@ sahie_2018_nat2 <- sahie_2018 %>%
 
 sahie_2018_merge <- bind_rows(sahie_2018,sahie_2018_nat2)
 
+
+# SAVE ---------
+
+saveRDS(sahie_2018_merge,paste0(path_c19dashboard_shared_folder,"/Data/Processed/SAHIE/sahie_2018_merge.RDS"))
+write.csv(sahie_2018_merge,paste0(path_c19dashboard_shared_folder,"/Data/Processed/SAHIE/sahie_2018_merge.csv"),row.names = FALSE)
+write.csv(head(sahie_2018_merge,n=1000),paste0(path_c19dashboard_shared_folder,"/Data/Processed/SAHIE/EXAMPLE_sahie_2018_merge.csv"),row.names = FALSE)
 
 
 

@@ -1,6 +1,6 @@
 
 # urbancodes3 ------------
-urbancodes3 <- readxl::read_excel(paste0(path_c19dashboard_old_folder,"/CDC_Urban_Rural/Urban_Rural_2013_Classification.xlsx"),sheet="SAS") %>% 
+urbancodes3 <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,"/Data/Raw/CDC_Urban_Rural/Urban_Rural_2013_Classification.xlsx"),sheet="SAS") %>% 
   dplyr::rename(Urbanization_2013 = '2013 Urbanization',
                 Urbanization_Code_2013 = '2013 Urbanization Code',
                 county_code = 'County Code',
@@ -19,7 +19,7 @@ urbancodes3 <- readxl::read_excel(paste0(path_c19dashboard_old_folder,"/CDC_Urba
   mutate_at(vars(deaths,population,crude_rate),~as.numeric(.))
   
 # statepopulation 3 --------------  
-statepopulation3 <- readxl::read_excel(paste0(path_c19dashboard_old_folder,"/CDC_Urban_Rural/State_2018_pop.xlsx"),sheet="SAS") %>% 
+statepopulation3 <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,"/Data/Raw/CDC_Urban_Rural/State_2018_pop.xlsx"),sheet="SAS") %>% 
   dplyr::rename(statename = 'State',
                 state = 'State Code',
                 deaths = 'Deaths',
@@ -42,5 +42,6 @@ population_all <- bind_rows(nationalpop2,
   rename(deaths_allcause = deaths) %>% 
   dplyr::select(nation,state,county,deaths_allcause,population)
 
+saveRDS(urbancodes3,paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC_Urban_Rural/urbancodes3.RDS"))
 
 

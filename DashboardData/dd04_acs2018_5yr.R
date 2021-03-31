@@ -6,7 +6,7 @@
 
 # acs2018_5yr_county ----------
 
-acs2018_5yr_county = haven::read_sas(paste0(path_c19dashboard_old_folder,"/ACS 2018 5yr/acs2018_5yr_county.sas7bdat")) %>%
+acs2018_5yr_county = haven::read_sas(paste0(path_c19dashboard_shared_folder,"/Data/Raw/ACS 2018 5yr/acs2018_5yr_county.sas7bdat")) %>%
   dplyr::rename(fips = FIPS) %>% 
   mutate(popden = A00002_002,
          age65over = (A01001_011 + A01001_012 + A01001_013) / A00001_001 * 100,
@@ -31,7 +31,7 @@ acs2018_5yr_county = haven::read_sas(paste0(path_c19dashboard_old_folder,"/ACS 2
 
 # acs2018_5yr_state ------
 
-acs2018_5yr_state = haven::read_sas(paste0(path_c19dashboard_old_folder,"/ACS 2018 5yr/acs2018_5yr_state.sas7bdat")) %>%
+acs2018_5yr_state = haven::read_sas(paste0(path_c19dashboard_shared_folder,"/Data/Raw/ACS 2018 5yr/acs2018_5yr_state.sas7bdat")) %>%
   dplyr::rename(fips = FIPS) %>% 
   mutate(popden = A00002_002,
          age65over = (A01001_011 + A01001_012 + A01001_013) / A00001_001 * 100,
@@ -55,7 +55,7 @@ acs2018_5yr_state = haven::read_sas(paste0(path_c19dashboard_old_folder,"/ACS 20
 
 # acs2018_5yr_nation --------
 
-acs2018_5yr_nation = haven::read_sas(paste0(path_c19dashboard_old_folder,"/ACS 2018 5yr/acs2018_5yr_nation.sas7bdat")) %>%
+acs2018_5yr_nation = haven::read_sas(paste0(path_c19dashboard_shared_folder,"/Data/Raw/ACS 2018 5yr/acs2018_5yr_nation.sas7bdat")) %>%
   dplyr::rename(fips = FIPS) %>% 
   mutate(popden = A00002_002,
          age65over = (A01001_011 + A01001_012 + A01001_013) / A00001_001 * 100,
@@ -87,4 +87,8 @@ acs2018_5yr_all <- bind_rows(
 ) %>% 
   dplyr::filter(!state %in% c(66,69,72,78))
 
+# SAVE ---------
 
+saveRDS(acs2018_5yr_all,paste0(path_c19dashboard_shared_folder,"/Data/Processed/ACS 2018 5yr/acs2018_5yr_all.RDS"))
+write.csv(acs2018_5yr_all,paste0(path_c19dashboard_shared_folder,"/Data/Processed/ACS 2018 5yr/acs2018_5yr_all.csv"),row.names = FALSE)
+write.csv(head(acs2018_5yr_all,n=1000),paste0(path_c19dashboard_shared_folder,"/Data/Processed/ACS 2018 5yr/EXAMPLE_acs2018_5yr_all.csv"),row.names = FALSE)

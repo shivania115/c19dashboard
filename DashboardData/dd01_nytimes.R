@@ -5,8 +5,7 @@ nytimes_counties_url <- "https://raw.githubusercontent.com/nytimes/covid-19-data
 
 
 nyt_national <- read_csv(nytimes_national_url)%>% 
-  dplyr::mutate(nation = 1) %>% 
-  mutate(fips = as.numeric(fips))
+  dplyr::mutate(nation = 1)
 nyt_states <- read_csv(nytimes_states_url) %>% 
   dplyr::mutate(state = fips %>% as.numeric(.)) %>% 
   mutate(fips = as.numeric(fips))
@@ -14,6 +13,16 @@ nyt_counties <- read_csv(nytimes_counties_url) %>%
   dplyr::mutate(state = substr(fips,1,2) %>% as.numeric(.),
                 county = substr(fips,3,5) %>% as.numeric(.)) %>% 
   mutate(fips = as.numeric(fips))
+
+# Save RAW ----------
+national_last_date = max(nyt_national$date)
+write.csv(nyt_national,paste0(path_c19dashboard_shared_folder,"/Data/Raw/NYT Covid19 data/nytimes us_",national_last_date,".csv"),row.names = FALSE)
+
+states_last_date = max(nyt_states$date)
+write.csv(nyt_states,paste0(path_c19dashboard_shared_folder,"/Data/Raw/NYT Covid19 data/nytimes states_",states_last_date,".csv"),row.names = FALSE)
+
+counties_last_date = max(nyt_counties$date)
+write.csv(nyt_counties,paste0(path_c19dashboard_shared_folder,"/Data/Raw/NYT Covid19 data/nytimes counties_",counties_last_date,".csv"),row.names = FALSE)
 
 
 # covid_all_orig <- read_csv(paste0(path_c19dashboard_old_folder,"/covid_all.csv"))

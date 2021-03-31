@@ -3,6 +3,7 @@
 "black"  =  "% African American"  
 "poverty"  = "% in Poverty"
 "PCTUI" = "% Uninsured"
+"PCTIC" = "% Insured"
 "diabetes"="% Diabetes"
 "obesity"="% Obese"
 "groupquater"  = "% in Group Quarters" 

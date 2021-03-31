@@ -7,6 +7,7 @@ library(httr)
 
 alaska <- read.csv("https://opendata.arcgis.com/datasets/797cbc3e398241a2b11e76fc06dd2b8b_0.csv") %>%
   select(Hospitalized_Cases__Cumulative_,Date_Reported) %>% 
+  # POSSIBLE ISSUE: hospTot is the cumulative number and not daily hospitalized
   dplyr::rename(hospTot = Hospitalized_Cases__Cumulative_,
                 date = Date_Reported) %>%
   mutate(date = as.Date(date), statename = "Alaska")
@@ -36,8 +37,23 @@ michigan_url <- "https://www.michigan.gov/coronavirus/0,9753,7-406-98159-523641-
 
 mi_tables <- read_html(michigan_url) %>% 
   html_nodes(.,"table") %>% 
-  html_table(.) %>% 
-  map(.,.f=function(x) janitor::clean_names(x))
+  html_table(.)
+
+# Checking mi_tables[[1]]
+if(names(mi_tables[[1]])[2] == "X2"){
+  names(mi_tables[[1]]) <- mi_tables[[1]][1,]
+  mi_tables[[1]] <- mi_tables[[1]][-1,]
+}
+
+# Checking mi_tables[[2]]
+if(names(mi_tables[[2]])[1] != "HCC Region"){
+  names(mi_tables[[2]]) <- mi_tables[[2]][1,]
+  mi_tables[[2]] <- mi_tables[[2]][-1,]
+  print("mi_tables[[2]] corrected")
+}
+  
+mi_tables <-  map(mi_tables,.f=function(x) janitor::clean_names(x))
+  
 
 
 mi_captions <- read_html(michigan_url) %>% 
@@ -69,20 +85,28 @@ michigan <- bind_cols(
   
   mi_tables[[2]] %>%
     dplyr::select(hcc_region,total) %>%
-    mutate(hcc_region = str_replace_all(hcc_region,"(\\r|\\n|\\t|\\*)","")) %>%
+    mutate(hcc_region = str_replace_all(hcc_region,"(\\r|\\n|\\t|\\s|\\*|/)","")) %>%
     
     pivot_wider(names_from = hcc_region,values_from=total) %>%
     
     
-    rename(adultCOVIDHosp = 'Adult Confirmed-PositiveCOVID',
-           pedsCOVIDHosp = 'Hospitalized PedConfirmed-Positive',
-           icuAdmDaily = 'ICU Adult Confirmed-Positive COVID')
+    rename(
+           total_hospitalized_suspected = 'TotalHospitalizedAdultSuspectedConfirmed',
+           adultCOVIDHosp = 'AdultConfirmed-PositiveCOVID',
+           hospitalized_peds_suspected = "HospitalizedPedsConfirmedSuspected",
+           pedsCOVIDHosp = 'HospitalizedPedConfirmed-Positive',
+           hospitalized_ventilated_covid = 'HospitalizedandVentilatedCOVID',
+           adult_icu_suspected = 'AdultICUConfirmedSuspectedCOVID',
+           prevday_covid_ed_visits = 'PrevDayCOVIDRelatedEDVisits',
+           icuAdmDaily = 'ICUAdultConfirmed-PositiveCOVID')
 ) %>% 
   dplyr::mutate(date = mi_captions[1,]$date)
 
 
 # DISTRICT OF COLUMBIA ------------------
-columbiadatezip = format(Sys.Date()-1, '%m-%d-%Y')
+columbiadate = str_to_title(format(Sys.Date()-1, '%B-%d-%Y'))
+# columbiadate <-gsub("(^|[^0-9])0+", "\\1", columbiadate)
+
 dc_url = paste("https://coronavirus.dc.gov/sites/default/files/dc/sites/coronavirus/page_content/attachments/DC-COVID-19-Data-for-",columbiadate,".xlsx",sep="")
 
 dc_hosp <- openxlsx::read.xlsx(dc_url,sheet="Overal Stats") %>% 
@@ -104,15 +128,18 @@ dc_hosp <- openxlsx::read.xlsx(dc_url,sheet="Overal Stats") %>%
   pivot_wider(names_from="var",values_from="value")
 
 dc_tests <- openxlsx::read.xlsx(dc_url,sheet="Overal Stats") %>% 
-  rename(indicator = "X1") %>% 
-  dplyr::select(-X2) %>% 
+  rename(domain = "X1",
+         indicator = "X2") %>% 
+  mutate_at(vars(indicator,domain),~trimws(.)) %>% 
   dplyr::filter(indicator %in% c("Total Submitted for Testing",
+                                 "Total Overall Number of Tests",
                                  "Total Positives")) %>% 
+  dplyr::select(-domain) %>% 
   mutate_at(vars(-one_of("indicator")),~as.numeric(.)) %>% 
   pivot_longer(cols=matches("[0-9]+"),names_to="date",values_to="value") %>% 
   # https://stackoverflow.com/questions/43230470/how-to-convert-excel-date-format-to-proper-date-in-r/62334132
   mutate(date = as.Date(as.numeric(date),origin="1899-12-30")) %>% 
-  mutate(var = case_when(indicator == "Total Submitted for Testing" ~ "testDaily",
+  mutate(var = case_when(indicator %in% c("Total Submitted for Testing","Total Overall Number of Tests") ~ "testDaily",
                          indicator == "Total Positives" ~ "positive",
                          TRUE ~ NA_character_)) %>% 
   dplyr::select(-indicator) %>% 
@@ -130,15 +157,15 @@ tx_hosp = openxlsx::read.xlsx(tx_url,sheet="COVID-19 Hospitalizations",startRow=
   dplyr::filter(TSA.ID == "Total") %>% 
   mutate(var = "hospTot") %>% 
   mutate_at(vars(-var,-TSA.ID,-TSA.AREA),~as.numeric(.))
-tx_available_beds = openxlsx::read.xlsx(tx_url,sheet="COVID-19 Hospitalizations",startRow=3)%>% 
+tx_available_beds = openxlsx::read.xlsx(tx_url,sheet="Total Available Beds",startRow=3) %>% 
   dplyr::filter(TSA.ID == "Total")  %>% 
-  mutate(var = "hospCum")%>% 
+  mutate(var = "hospCum") %>% 
   mutate_at(vars(-var,-TSA.ID,-TSA.AREA),~as.numeric(.))
 tx_hospitalizations = openxlsx::read.xlsx(tx_url,sheet="COVID Hospitalizations (%)",startRow=3)%>% 
   dplyr::filter(TSA.ID == "Total") %>% 
-  mutate(var = "icuAdm")%>% 
-  mutate_at(vars(-var,-TSA.ID,-TSA.AREA),~as.numeric(.))
-tx_beds = openxlsx::read.xlsx(tx_url,sheet="COVID-19 ICU",startRow=3)%>% 
+  mutate(var = "icuAdm") %>% 
+  mutate_at(vars(-var,-TSA.ID,-TSA.AREA),~str_replace(.,pattern = "%","") %>% as.numeric(.))
+tx_beds = openxlsx::read.xlsx(tx_url,sheet="COVID-19 ICU",startRow=3) %>% 
   dplyr::filter(TSA.ID == "Total") %>% 
   mutate(var = "icuBeds")%>% 
   mutate_at(vars(-var,-TSA.ID,-TSA.AREA),~as.numeric(.))
@@ -150,5 +177,23 @@ texas <- bind_rows(tx_hosp,tx_available_beds,tx_hospitalizations,tx_beds) %>%
   mutate(date = case_when(date == "44051" ~ as.character(as.Date(44051,origin="1899-12-30")),
                           TRUE ~ date)) %>% 
   mutate(date = lubridate::ymd(date))
+
+# SAVE -----------
+
+saveRDS(alaska,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/alaska.RDS"))
+saveRDS(California,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/California.RDS"))
+saveRDS(michigan,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/michigan.RDS"))
+saveRDS(columbia,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/columbia.RDS"))
+saveRDS(texas,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/texas.RDS"))
+
+
+
+write.csv(alaska,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/alaska.csv"),row.names = FALSE)
+write.csv(California,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/California.csv"),row.names = FALSE)
+write.csv(michigan,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/michigan.csv"),row.names = FALSE)
+write.csv(columbia,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/columbia.csv"),row.names = FALSE)
+write.csv(texas,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/texas.csv"),row.names = FALSE)
+
+
 
 

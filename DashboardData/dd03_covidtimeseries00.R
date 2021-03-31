@@ -56,3 +56,5 @@ covidtimeseries_pop <- covidtimeseries %>%
             .names = "{fn}_{col}") %>% 
   dplyr::filter(state != 0 | !(is.na(nation)&is.na(state)&is.na(county)))
 
+saveRDS(covidtimeseries_pop,paste0(path_c19dashboard_shared_folder,"/Data/Processed/NYT Covid19 data/covidtimeseries00.RDS"))
+write.csv(head(covidtimeseries_pop,n=1000),paste0(path_c19dashboard_shared_folder,"/Data/Processed/NYT Covid19 data/EXAMPLE_covidtimeseries00.csv"),row.names = FALSE)
