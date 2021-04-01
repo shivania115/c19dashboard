@@ -36,3 +36,6 @@ saveRDS(states_error_list,paste0(path_cpr_processed,folder_name,"/states_error_l
 haven::write_dta(states_df_clean,paste0(path_cpr_processed,folder_name,"/states_df_clean.dta"),version=12)
 haven::write_dta(states_date_range_clean,paste0(path_cpr_processed,folder_name,"/states_date_range_clean.dta"),version=12)
 haven::write_dta(states_error_list,paste0(path_cpr_processed,folder_name,"/states_error_list.dta"),version=12)
+
+write.csv(states_df_clean,paste0(path_cpr_processed,folder_name,"/states_df_clean.csv"),row.names = FALSE)
+write.csv(states_date_range_clean,paste0(path_cpr_processed,folder_name,"/states_date_range_clean.csv"),row.names = FALSE)

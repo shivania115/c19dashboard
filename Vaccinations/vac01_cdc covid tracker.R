@@ -4,20 +4,27 @@ library(RJSONIO)
 vaccination_county_link <- "https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=vaccination_county_condensed_data"
 vaccination_county <- jsonlite::fromJSON(vaccination_county_link)[2][[1]]
 
-write.csv(vaccination_county,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/CDC_Covid Data Tracker_County Vaccination_",Sys.Date(),".csv"),row.names = FALSE)
+date <- unique(vaccination_county$Date)
+
+write.csv(vaccination_county,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/CDC_Covid Data Tracker_County Vaccination_",date,".csv"),row.names = FALSE)
 
 f = list.files(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations"))
 f = f[regexpr("CDC_Covid Data Tracker_County Vaccination_",f)>0]
 
 vaccination_ts <- map_dfr(f,.f=function(x){read_csv(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/",x))})
 
+# PENDING: Possible speed-up ----------
+# This takes time: ~ 30seconds
+# Did not want to write a new dataset just in case it gets updated later
+countynames <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/covidtimeseries.csv")) %>% 
+  distinct(nation,state,county,countyname)
 
 vaccination_ts_cleaned <- vaccination_ts %>% 
   rename(date = Date,
          fips = FIPS,
          statename = StateName,
          state_abbreviation = StateAbbr,
-         countyname = County,
+         # countyname = County,
          n_complete_18plus = Series_Complete_18Plus,
          pct_complete_18plus_in_pop = Series_Complete_18PlusPop_Pct,
          n_complete_65plus = Series_Complete_65Plus,
@@ -25,12 +32,21 @@ vaccination_ts_cleaned <- vaccination_ts %>%
          n_complete = Series_Complete_Yes,
          pct_complete_in_pop = Series_Complete_Pop_Pct,
          pct_completeness = Completeness_pct) %>% 
+  dplyr::select(-County)  %>% 
   mutate(date = lubridate::ymd(date),
+         nation = NA,
          state = substr(fips,1,2) %>% as.numeric(),
          county = substr(fips,3,5) %>% as.numeric()) %>% 
-  mutate(fips = as.numeric(fips))
+  mutate(fips = as.numeric(fips)) %>% 
+  rename(countycode = fips) %>% 
+  left_join(countynames,
+            by = c("nation","state","county"))
+
+
+
 
 saveRDS(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.RDS"))
+haven::write_sas(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.sas7bdat"))
 write.csv(head(vaccination_ts_cleaned,n=1000),
           paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/EXAMPLE_vaccination_ts_cleaned.csv"),
           row.names = FALSE)

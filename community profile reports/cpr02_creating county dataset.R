@@ -40,3 +40,6 @@ saveRDS(error_list,paste0(path_cpr_processed,folder_name,"/counties_error_list.R
 haven::write_dta(df_clean,paste0(path_cpr_processed,folder_name,"/counties_df_clean.dta"),version=12)
 haven::write_dta(date_range_clean,paste0(path_cpr_processed,folder_name,"/counties_date_range_clean.dta"),version=12)
 haven::write_dta(error_list,paste0(path_cpr_processed,folder_name,"/counties_error_list.dta"),version=12)
+
+write.csv(df_clean,paste0(path_cpr_processed,folder_name,"/counties_df_clean.csv"),row.names = FALSE)
+write.csv(date_range_clean,paste0(path_cpr_processed,folder_name,"/counties_date_range_clean.csv"),row.names = FALSE)
