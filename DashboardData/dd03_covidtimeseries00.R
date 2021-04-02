@@ -1,5 +1,8 @@
 
 
+population_all <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC_Urban_Rural/population_all.RDS"))
+
+
 # covid_pop -------------
 
 covid_pop <- covid_all %>% 

@@ -43,5 +43,6 @@ population_all <- bind_rows(nationalpop2,
   dplyr::select(nation,state,county,deaths_allcause,population)
 
 saveRDS(urbancodes3,paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC_Urban_Rural/urbancodes3.RDS"))
+saveRDS(population_all,paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC_Urban_Rural/population_all.RDS"))
 
 

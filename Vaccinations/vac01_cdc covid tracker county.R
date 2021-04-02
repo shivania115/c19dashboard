@@ -25,13 +25,13 @@ vaccination_ts_cleaned <- vaccination_ts %>%
          statename = StateName,
          state_abbreviation = StateAbbr,
          # countyname = County,
-         n_complete_18plus = Series_Complete_18Plus,
-         pct_complete_18plus_in_pop = Series_Complete_18PlusPop_Pct,
-         n_complete_65plus = Series_Complete_65Plus,
-         pct_complete_65plus_in_pop = Series_Complete_65PlusPop_Pct,
-         n_complete = Series_Complete_Yes,
-         pct_complete_in_pop = Series_Complete_Pop_Pct,
-         pct_completeness = Completeness_pct) %>% 
+         nComplete18Plus = Series_Complete_18Plus,
+         pctComplete18PlusInPop = Series_Complete_18PlusPop_Pct,
+         nComplete65Plus = Series_Complete_65Plus,
+         pctComplete65PlusInPop = Series_Complete_65PlusPop_Pct,
+         nComplete = Series_Complete_Yes,
+         pctCompleteInPop = Series_Complete_Pop_Pct,
+         pctCompleteness = Completeness_pct) %>% 
   dplyr::select(-County)  %>% 
   mutate(date = lubridate::ymd(date),
          nation = NA,
