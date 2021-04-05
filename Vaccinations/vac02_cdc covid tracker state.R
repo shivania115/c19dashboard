@@ -31,7 +31,7 @@ VaccineTracker <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/
 # names(casesdata)[26] <-"Administered_Dose2"
 
 
-drop_cols <- names(state_vaccination_ts)[c(6,18:27,29:30,39:46,48:50,53:56)]
+drop_cols <- names(vaccination_data)[c(6,18:27,29:30,39:46,48:50,53:56)]
 
 # casesdata ----------
 casesdata <- vaccination_data %>% 
@@ -64,7 +64,8 @@ casesdata <- vaccination_data %>%
          #CHECK: Line 1201 of Jithin_code.R has possible multiplication by 100 missing
          percentReceived = Doses_Administered*100/Doses_Distributed %>% round(.,1),
          
-  )
+  )  %>% 
+  mutate(Date = lubridate::ymd(as.character(Date)))
   
 
 VaccineTracker0 <- bind_rows(VaccineTracker,

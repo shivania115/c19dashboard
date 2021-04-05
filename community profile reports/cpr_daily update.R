@@ -44,12 +44,15 @@ new_files <- b %>%
 
 # Download files ----------
 
-for (f in 1:nrow(new_files)){
-  # for (f in 1:3){
-  file_name = str_replace(new_files$file_name[f],pattern = "filename=","")
-  
-  download.file(paste0("https://beta.healthdata.gov/",b$var[f]),
-                destfile = paste0(path_cpr_raw,"/",file_name),mode = "wb")
+if(nrow(new_files)>0){
+  for (f in 1:nrow(new_files)){
+    # for (f in 1:3){
+    file_name = str_replace(new_files$file_name[f],pattern = "filename=","")
+    
+    download.file(paste0("https://beta.healthdata.gov/",b$var[f]),
+                  destfile = paste0(path_cpr_raw,"/",file_name),mode = "wb")
+    
+  }
   
 }
 

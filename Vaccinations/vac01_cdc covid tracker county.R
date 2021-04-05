@@ -13,10 +13,7 @@ f = f[regexpr("CDC_Covid Data Tracker_County Vaccination_",f)>0]
 
 vaccination_ts <- map_dfr(f,.f=function(x){read_csv(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/",x))})
 
-# PENDING: Possible speed-up ----------
-# This takes time: ~ 30seconds
-# Did not want to write a new dataset just in case it gets updated later
-countynames <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/covidtimeseries.csv")) %>% 
+countynames <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/nationalraw.csv")) %>% 
   distinct(nation,state,county,countyname)
 
 vaccination_ts_cleaned <- vaccination_ts %>% 
@@ -46,7 +43,8 @@ vaccination_ts_cleaned <- vaccination_ts %>%
 
 
 saveRDS(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.RDS"))
-haven::write_sas(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.sas7bdat"))
+write.csv(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.csv"),row.names=FALSE)
+haven::write_dta(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.dta"),version=12)
 write.csv(head(vaccination_ts_cleaned,n=1000),
           paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/EXAMPLE_vaccination_ts_cleaned.csv"),
           row.names = FALSE)
