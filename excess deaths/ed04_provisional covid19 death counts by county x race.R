@@ -2,9 +2,18 @@
 # API: https://data.cdc.gov/resource/k8wy-p9cg.csv
 # - https://dev.socrata.com/foundry/data.cdc.gov/k8wy-p9cg
 
+folder_name <- Sys.Date()
+
 k8wy_p9cg_url <- "https://data.cdc.gov/api/views/k8wy-p9cg/rows.csv?accessType=DOWNLOAD"
 
 k8wy_p9cg <- read_csv(k8wy_p9cg_url) 
+
+date_as_of <- k8wy_p9cg$`Data as of` %>% unique() %>% lubridate::mdy(.)
+
+write.csv(k8wy_p9cg,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Excess Deaths/",folder_name,
+                           "/Provisional COVID-19 Death Counts by County and Race cleaned_",date_as_of,".csv"),
+          row.names=FALSE)
+
 
 k8wy_p9cg_cleaned <- k8wy_p9cg %>% 
   rename(data_as_of = "Data as of" ,

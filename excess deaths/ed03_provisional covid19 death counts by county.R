@@ -2,8 +2,17 @@
 # API: https://data.cdc.gov/resource/kn79-hsxy.csv
 # - https://dev.socrata.com/foundry/data.cdc.gov/kn79-hsxy
 
+folder_name <- Sys.Date()
+
 kn79_hsxy_url <- "https://data.cdc.gov/api/views/kn79-hsxy/rows.csv?accessType=DOWNLOAD"
 kn79_hsxy <- read_csv(kn79_hsxy_url)
+
+date_as_of <- kn79_hsxy$`Date as of` %>% unique(.) %>% lubridate::mdy(.)
+
+write.csv(kn79_hsxy,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Excess Deaths/",folder_name,
+                           "/Provisional COVID-19 Death Counts in the United_States by County_",date_as_of,".csv"),
+          row.names=FALSE)
+
 
 kn79_hsxy_cleaned <- kn79_hsxy %>% 
   rename(data_as_of = "Date as of",

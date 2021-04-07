@@ -3,9 +3,16 @@
 # - https://dev.socrata.com/foundry/data.cdc.gov/xkkf-xrst
 # CSV: https://data.cdc.gov/api/views/xkkf-xrst/rows.csv?accessType=DOWNLOAD&bom=true&format=true%20target=
 
+folder_name <- Sys.Date()
 
 xkkf_xrst_url <- "https://data.cdc.gov/api/views/xkkf-xrst/rows.csv?accessType=DOWNLOAD&bom=true&format=true%20target="
-xkkf_xrst <- read_csv(xkkf_xrst_url) # 100 MB file
+xkkf_xrst <- read_csv(xkkf_xrst_url)
+
+date_as_of <- xkkf_xrst$`Week Ending Date` %>% max(.)
+
+write.csv(xkkf_xrst,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Excess Deaths/",folder_name,
+                           "/Excess Deaths Associated with COVID-19_",date_as_of,".csv"),
+          row.names=FALSE)
 
 
 xkkf_xrst_cleaned <- xkkf_xrst %>% 

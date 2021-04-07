@@ -9,8 +9,17 @@
 # and there is considerable variation by jurisdiction. The predicted numbers of deaths may be too low for some groups and possibly too high for others.
 
 
+folder_name <- Sys.Date()
+
 qfhf_uhaa_url <- "https://data.cdc.gov/api/views/qfhf-uhaa/rows.csv?accessType=DOWNLOAD&bom=true&format=true%20target="
 qfhf_uhaa <- read_csv(qfhf_uhaa_url) # 100 MB file
+
+date_as_of <- qfhf_uhaa$`Week Ending Date` %>% lubridate::mdy() %>% max(.)
+
+write.csv(qfhf_uhaa,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Excess Deaths/",folder_name,
+                           "/Weekly counts of deaths by jurisdiction and race and Hispanic origin_",date_as_of,".csv"),
+          row.names=FALSE)
+
 
 qfhf_uhaa_cleaned <- qfhf_uhaa %>% 
   dplyr::rename(jurisdiction = Jurisdiction,
