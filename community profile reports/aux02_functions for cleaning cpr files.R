@@ -1,6 +1,6 @@
 # Function for generating cleaned CPR datasets -------------
 
-clean_cpr <- function(file_name){
+county_cpr <- function(file_name){
   path_cpr_raw <- paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports/")
   path_cpr_processed <- paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/")
   

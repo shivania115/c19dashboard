@@ -15,7 +15,7 @@ source(paste0(path_c19dashboard_repo,"/community profile reports/aux02_functions
 cpr_cleaned_list <- map(f,
                     function(x){
                       
-                      clean_cpr(x)
+                      county_cpr(x)
                       
                       
                     }

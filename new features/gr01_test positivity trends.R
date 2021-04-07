@@ -20,6 +20,14 @@ folder_name = paste0("/",as.Date(max(file_dates),origin = "1970-01-01"),"/")
 
 counties_df <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports",folder_name,"counties_df_clean.RDS"))
 
+# View(counties_df %>% 
+#        dplyr::select(V01:V02,date_of_file,V33) %>% 
+#        dplyr::filter(!is.na(V33)) %>% 
+#        group_by(V01,V02) %>% 
+#        summarize(date_min = min(date_of_file),
+#                  date_max = max(date_of_file)) %>% 
+#        ungroup() %>% group_by(date_min) %>% tally())
+
 counties_df %>%
   rename(viral_positivity_rate_7day = V33,
          rtpcr_per100k_7day = V35) %>%
