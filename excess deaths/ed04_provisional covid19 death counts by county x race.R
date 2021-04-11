@@ -11,7 +11,7 @@ k8wy_p9cg <- read_csv(k8wy_p9cg_url)
 date_as_of <- k8wy_p9cg$`Data as of` %>% unique() %>% lubridate::mdy(.)
 
 write.csv(k8wy_p9cg,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Excess Deaths/",folder_name,
-                           "/Provisional COVID-19 Death Counts by County and Race cleaned_",date_as_of,".csv"),
+                           "/Provisional COVID-19 Death Counts by County and Race_",date_as_of,".csv"),
           row.names=FALSE)
 
 

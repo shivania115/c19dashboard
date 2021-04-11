@@ -21,6 +21,10 @@ cpr_cleaned_list <- map(f,
                     }
                     )
 
+# Patch ------------
+# Community_Profile_Report_20210409_Public.xlsx
+cpr_cleaned_list[[104]][1][[1]]$V07 <- paste0("Region ",cpr_cleaned_list[[104]][1][[1]]$V07)
+
 df_clean <- map_dfr(cpr_cleaned_list,function(x) x[[1]]) %>% 
   mutate(fips = sprintf("%05d",V02)) %>%
   mutate(state = substr(fips,1,2) %>% as.numeric(),
