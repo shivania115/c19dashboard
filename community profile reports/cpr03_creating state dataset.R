@@ -25,6 +25,33 @@ states_df_clean <- map_dfr(states_cpr_cleaned_list,function(x) x[[1]]) %>%
 states_date_range_clean <- map_dfr(states_cpr_cleaned_list,function(x) x[[2]])
 states_error_list <- map_dfr(states_cpr_cleaned_list,function(x) x[[3]])
 
+
+# Merging with headers
+states_date_range_clean <- states_date_range_clean %>% 
+  mutate(daterange = str_replace_all(daterange,"(\\(|\\))","")) %>% 
+  mutate(header = trimws(header)) %>% 
+  left_join(readxl::read_excel(paste0(path_cpr_processed,"/CPR Variable List.xlsx"),sheet = "Headers") %>% 
+              mutate(header = trimws(header)) %>% 
+              dplyr::filter(Level == "States"),
+            by = "header"
+  ) %>% 
+  dplyr::select(-Level,-header) %>% 
+  pivot_wider(names_from = "variable",values_from="daterange")
+
+states_date_range_clean <- states_date_range_clean[,gtools::mixedsort(colnames(states_date_range_clean))]
+
+states_df_clean <- states_df_clean %>% 
+  left_join(states_date_range_clean,
+            by=c("date_of_file","file_name"))
+
+
+# states_date_range_clean <- readRDS(paste0(path_cpr_processed,folder_name,"/states_date_range_clean.RDS"))
+# states_df_clean <- readRDS(paste0(path_cpr_processed,folder_name,"/states_df_clean.RDS"))
+# states_error_list <- readRDS(paste0(path_cpr_processed,folder_name,"/states_error_list.RDS"))
+
+
+
+
 # Save ----------------
 write.csv(states_error_list,paste0(path_cpr_processed,folder_name,"/states_error_list.csv"))
 

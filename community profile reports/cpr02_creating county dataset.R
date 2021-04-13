@@ -23,7 +23,7 @@ cpr_cleaned_list <- map(f,
 
 # Patch ------------
 # Community_Profile_Report_20210409_Public.xlsx
-files_with_issues <- c("Community_Profile_Report_20210411_Public.xlsx","Community_Profile_Report_20210409_Public.xlsx","Community Profile Report 20210330.xlsx")
+files_with_issues <- c("Community_Profile_Report_20210412_Public.xlsx","Community_Profile_Report_20210411_Public.xlsx","Community_Profile_Report_20210409_Public.xlsx","Community Profile Report 20210330.xlsx")
 index_files_with_issues <- which(f %in% files_with_issues)
 
 for(i in index_files_with_issues){
@@ -39,6 +39,30 @@ df_clean <- map_dfr(cpr_cleaned_list,function(x) x[[1]]) %>%
 
 date_range_clean <- map_dfr(cpr_cleaned_list,function(x) x[[2]])
 error_list <- map_dfr(cpr_cleaned_list,function(x) x[[3]])
+
+
+# Merging with headers
+date_range_clean <- date_range_clean %>% 
+  mutate(daterange = str_replace_all(daterange,"(\\(|\\))","")) %>% 
+  mutate(header = trimws(header)) %>% 
+  left_join(readxl::read_excel(paste0(path_cpr_processed,"/CPR Variable List.xlsx"),sheet = "Headers") %>% 
+              mutate(header = trimws(header)) %>% 
+              dplyr::filter(Level == "Counties"),
+            by = "header"
+              ) %>% 
+  dplyr::select(-Level,-header) %>% 
+  pivot_wider(names_from = "variable",values_from="daterange")
+
+date_range_clean <- date_range_clean[,gtools::mixedsort(colnames(date_range_clean))]
+
+df_clean <- df_clean %>% 
+  left_join(date_range_clean,
+            by=c("date_of_file","file_name"))
+
+
+# date_range_clean <- readRDS(paste0(path_cpr_processed,folder_name,"/counties_date_range_clean.RDS"))
+# df_clean <- readRDS(paste0(path_cpr_processed,folder_name,"/counties_df_clean.RDS"))
+
 
 # Save ----------------
 write.csv(error_list,paste0(path_cpr_processed,folder_name,"/counties_error_list.csv"))

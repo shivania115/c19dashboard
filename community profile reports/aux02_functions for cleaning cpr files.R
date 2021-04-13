@@ -52,6 +52,14 @@ county_cpr <- function(file_name){
   
   df$date_of_file = lubridate::ymd(date_of_file) - 1
   unique_date_ranges$date_of_file = lubridate::ymd(date_of_file) - 1
+  
+  unique_date_ranges <- unique_date_ranges %>% 
+    mutate(daterange = case_when(header == "FORECASTING RESULTS (DECEMBER 14)" ~ "(December 14)",
+                                 TRUE ~ daterange),
+           header = case_when(header == "FORECASTING RESULTS (DECEMBER 14)" ~ "FORECASTING RESULTS",
+                                 TRUE ~ header),
+           )
+  
   return(list(df,unique_date_ranges,error_list))
   
   

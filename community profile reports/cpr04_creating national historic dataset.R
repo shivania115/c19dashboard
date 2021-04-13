@@ -31,6 +31,12 @@ national_date_range_clean <- map_dfr(national_cpr_cleaned_list,function(x) x[[2]
 national_error_list <- map_dfr(national_cpr_cleaned_list,function(x) x[[3]]) %>% 
   dplyr::select(-starts_with(".."))
 
+
+# national_date_range_clean <- readRDS(paste0(path_cpr_processed,folder_name,"/national_date_range_clean.RDS"))
+# national_df_clean <- readRDS(paste0(path_cpr_processed,folder_name,"/national_df_clean.RDS"))
+# national_error_list <- readRDS(paste0(path_cpr_processed,folder_name,"/national_error_list.RDS"))
+
+
 # Save ----------------
 write.csv(national_error_list,paste0(path_cpr_processed,folder_name,"/national_error_list.csv"))
 
