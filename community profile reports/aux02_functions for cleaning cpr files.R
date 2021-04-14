@@ -53,6 +53,16 @@ county_cpr <- function(file_name){
   df$date_of_file = lubridate::ymd(date_of_file) - 1
   unique_date_ranges$date_of_file = lubridate::ymd(date_of_file) - 1
   
+  # The following files have issues
+  # files_with_issues <- c("Community_Profile_Report_20210412_Public.xlsx",
+  #                        "Community_Profile_Report_20210411_Public.xlsx",
+  #                        "Community_Profile_Report_20210409_Public.xlsx",
+  #                        "Community Profile Report 20210330.xlsx")
+  if(class(df$V07) == "numeric"){
+    df$V07 <- paste0("Region ",df$V07)
+  }
+  
+  
   unique_date_ranges <- unique_date_ranges %>% 
     mutate(daterange = case_when(header == "FORECASTING RESULTS (DECEMBER 14)" ~ "(December 14)",
                                  TRUE ~ daterange),

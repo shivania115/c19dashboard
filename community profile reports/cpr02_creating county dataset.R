@@ -21,14 +21,13 @@ cpr_cleaned_list <- map(f,
                     }
                     )
 
-# Patch ------------
+# Removing Patch ------------
 # Community_Profile_Report_20210409_Public.xlsx
-files_with_issues <- c("Community_Profile_Report_20210412_Public.xlsx","Community_Profile_Report_20210411_Public.xlsx","Community_Profile_Report_20210409_Public.xlsx","Community Profile Report 20210330.xlsx")
-index_files_with_issues <- which(f %in% files_with_issues)
-
-for(i in index_files_with_issues){
-  cpr_cleaned_list[[i]][1][[1]]$V07 <- paste0("Region ",cpr_cleaned_list[[i]][1][[1]]$V07)
-}
+# files_with_issues <- c("Community_Profile_Report_20210412_Public.xlsx","Community_Profile_Report_20210411_Public.xlsx","Community_Profile_Report_20210409_Public.xlsx","Community Profile Report 20210330.xlsx")
+# index_files_with_issues <- which(f %in% files_with_issues)
+# # for(i in index_files_with_issues){
+#   cpr_cleaned_list[[i]][1][[1]]$V07 <- paste0("Region ",cpr_cleaned_list[[i]][1][[1]]$V07)
+# }
 
 
 df_clean <- map_dfr(cpr_cleaned_list,function(x) x[[1]]) %>% 
