@@ -15,6 +15,8 @@ if(Sys.info()["user"]=="JVARGH7"){
   
   path_cpr_folder <- paste0(path_c19dashboard_shared_folder,"/Community Profile Reports")
 
+  source(paste0(path_c19dashboard_repo,"/package/script_copy.R"))
+  
 }
 
 if(Sys.info()["user"]==""){
