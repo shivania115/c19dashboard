@@ -1,18 +1,148 @@
 
-## Raw code - needs more work
 
-racedata <- read.csv("https://raw.githubusercontent.com/KFFData/COVID-19-Data/kff_master/Race%20Ethnicity%20COVID-19%20Data/Vaccines/20210405_Distribution%20of%20Vaccinations%2C%20Cases%2C%20Deaths%20and%20Total%20Population%20by%20RaceEthnicity.csv") %>%
-  slice(1:51)
+### Working on cleaning this
+# Pooja's Onedrive sync folder path
+loc = "/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data"
 
-racedata2 <- racedata %>% 
-  gather("indicator","percent",2:17) %>% 
+
+library(tidyverse)
+library(tidyr)
+library(plyr)
+library(ggplot2)
+library(tibble)
+library(cdlTools)
+library(dplyr)
+
+
+rawpath <- "/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Raw/RaceEthnicity"
+setwd(rawpath)
+
+# downloading data from github jhu
+download.file(path=rawpath,"https://github.com/KFFData/COVID-19-Data/archive/refs/heads/kff_master.zip", destfile = "COVID-19-Data-kff_master.zip")
+unzip(zipfile = "COVID-19-Data-kff_master.zip")
+
+
+datadir = "./COVID-19-Data-kff_master/Race Ethnicity COVID-19 Data/Vaccines"
+myfiles = list.files(path=datadir, pattern="*.csv", full.names=TRUE) %>%
+  str_extract("./COVID-19-Data-kff_master/Race Ethnicity COVID-19 Data/Vaccines/[0-9]{8}_COVID19 Vaccinations by RE.csv") 
+files <- complete.cases(myfiles)
+finalfiles <- myfiles[files]
+
+
+filedates = list.files(path=datadir, pattern="*.csv", full.names=TRUE) %>%
+  str_extract("[0-9]{8}") %>%
+  as.Date(format = '%Y%m%d') %>% unique()
+
+
+kffvaccstate = as_tibble(ldply(finalfiles, read.csv)) %>% 
   select(-Footnotes) %>%
+  mutate(date=rep(filedates,each=51)) %>% select(date,Location,everything()) %>%
+  dplyr::rename(statename=Location,
+                inclHispanic="Race.Categories.Include.Hispanic.Individuals",
+                White="White...of.Vaccinations",
+                African_American="Black...of.Vaccinations",
+                Hispanic="Hispanic...of.Vaccinations",
+                Asian="Asian...of.Vaccinations",
+                American_Native="American.Indian.or.Alaska.Native...of.Vaccinations",
+                NHPI="Native.Hawaiian.or.Other.Pacific.Islander...of.Vaccinations",
+                Other_race="Other...of.Vaccinations",
+                Known_race= "X..of.Vaccinations.with.Known.Race",                        
+                Unknown_race= "X..of.Vaccinations.with.Unknown.Race" ,                      
+                Known_ethnicity= "X..of.Vaccinations.with.Known.Ethnicity" ,                   
+                Unknown_ethnicity= "X..of.Vaccinations.with.Unknown.Ethnicity" ) 
+
+kffvaccstate[ , 3:13 ][ kffvaccstate[ ,3:13 ] == "<.01" ] <- "0"
+
+str(kffvaccstate)  
+varnam <- colnames(kffvaccstate)[4:14]
+kffvaccstate[varnam] <- sapply(kffvaccstate[varnam],as.numeric)
+
+kffvaccstate2 <- kffvaccstate %>%
+  mutate_if(is.numeric, ~(.)*100) %>%
+  # mutate_if(is.numeric, ~replace(., is.na(.), -9999)) %>%
+  mutate(inclNonhispanic = ifelse(inclHispanic=="" & Unknown_race==Unknown_ethnicity,1,NA),
+         inclHispanic=ifelse(inclHispanic=="Yes",1,NA),
+         Unknown_race_ethnicity=ifelse(inclNonhispanic==1,Unknown_race,NA))
+
+kffvaccstate2 <- kffvaccstate2 %>% 
+  select(date,statename,inclHispanic,inclNonhispanic,White,African_American,Asian,American_Native,NHPI, Other_race,everything())
+
+kffvaccstate2 <- kffvaccstate2 %>% 
+  mutate(sumRace = ifelse(inclHispanic==1,rowSums(.[5:10],na.rm=TRUE),NA),
+         sumRaceEth = ifelse(inclNonhispanic==1,rowSums(.[5:11],na.rm=TRUE),NA))
+
+vaccstate <- gather(kffvaccstate2,
+                    key="race",
+                    value="percentVaccinated",
+                    5:16) %>%
+  arrange(statename,race) %>%
+  filter(!race=="Known_race",!race=="Known_ethnicity") %>%
+  mutate(percentVaccinated=round(percentVaccinated,2),
+         inclNonhispanic=ifelse(is.na(inclNonhispanic),0,inclNonhispanic),
+         inclHispanic=ifelse(is.na(inclHispanic),0,inclHispanic),
+         race=gsub("_"," ",race),
+         racelbl = ifelse(inclNonhispanic==1 & !race=="Unknown ethnicity" & !race=="Unknown race" & !race=="Unknown race ethnicity" & !race=="Hispanic",paste("Non-Hispanic",race),
+                          ifelse(inclHispanic==1 & !race=="Unknown ethnicity" & !race=="Unknown race" & !race=="Unknown race ethnicity"& !race=="Hispanic",paste(race,"Alone"), race)),
+         pctVaccRace=ifelse(inclHispanic==1,percentVaccinated,NA),
+         pctVaccRaceEthn=ifelse(inclNonhispanic==1,percentVaccinated,NA),
+         pctUnknownRace=ifelse(inclHispanic==1&race=="Unknown race",percentVaccinated,NA),
+         pctUnknownEthn=ifelse(inclHispanic==1&race=="Unknown ethnicity",percentVaccinated,NA),
+         pctUnknownRaceEthn=ifelse(inclNonhispanic==1&race=="Unknown race ethnicity",percentVaccinated,NA)) 
+
+
+vaccstate2 <- vaccstate[!(vaccstate$race=="Unknown ethnicity"&vaccstate$inclNonhispanic==1),]
+vaccstate3 <- vaccstate2[!(vaccstate2$race=="Unknown race"&vaccstate2$inclNonhispanic==1),]
+vaccstate4 <- vaccstate3[!(vaccstate3$race=="Unknown race ethnicity"&vaccstate3$inclHispanic==1),]
+
+
+x <- c("White","African American","American Native", "Asian","NHPI", "Other race","Hispanic","Unknown race","Unknown ethnicity","Unknown race ethnicity")
+
+
+vaccstate_final <- vaccstate4 %>%
+  mutate(race =  factor(race, levels = x)) %>%
+  arrange(statename,race) %>%
+  mutate(state=fips(statename, to = "FIPS")) %>%
+  select(date,state,statename,inclHispanic,inclNonhispanic,race,racelbl,percentVaccinated,everything())
+
+
+
+##################################
+
+datadir = "./COVID-19-Data-kff_master/Race Ethnicity COVID-19 Data/Vaccines"
+myfiles = list.files(path=datadir, pattern="*.csv", full.names=TRUE) %>%
+  str_extract("./COVID-19-Data-kff_master/Race Ethnicity COVID-19 Data/Vaccines/[0-9]{8}_Distribution of Vaccinations, Cases, Deaths[ ,]? and Total Population by RaceEthnicity.csv") 
+files <- complete.cases(myfiles)
+finalfiles <- myfiles[files]
+finalfiles
+
+filedates = list.files(path=datadir, pattern="*.csv", full.names=TRUE) %>%
+  str_extract("[0-9]{8}") %>%
+  as.Date(format = '%Y%m%d') %>% unique()
+
+
+raecdata = as_tibble(ldply(finalfiles, read.csv)) %>% 
+  select(-Footnotes) %>% dplyr::rename(statename=State) %>% 
+  join(read.csv("/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/staticracedata.csv") %>% filter(race=="All Races Combined") %>% select(statename,state)) %>%
+  filter(!is.na(state)) %>%
+  mutate(date=rep(filedates,each=51)) %>%
+  select(date,state,statename,everything()) %>% 
+  gather("indicator","percent",4:19) %>% 
   mutate(race = sub(".Percent.of.*", "", indicator),
          metric= sub(".*.Percent.of.", "", indicator)) %>% select(-indicator) %>%
-  spread(metric,percent) 
+  spread(metric,percent) %>%
+  dplyr::rename(percentPop=Total.Population,percentCases=Cases,percentDeaths=Deaths,vaccinations=Vaccinations)
 
-names(racedata2) <- tolower(names(racedata2))
+raecdata[,5:8] <- sapply(raecdata[,5:8],as.numeric)
 
-finaldata <- racedata2 %>%
-  dplyr::rename(statename=state,totPop=total.population) 
+
+racevacc <- raecdata %>% 
+  mutate_if(is.numeric, ~ round(. * 100)) %>%
+  mutate(state=state/100,race=recode(race,"Black"="African American"))
+
+fulldata <- join(vaccstate_final,racevacc) %>%
+  mutate_if(is.numeric,~replace(., is.na(.), -9999)) %>% arrange(date,statename)
+
+write.csv(fulldata,"/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Race ethnicity/kffstaterace.csv",row.names=F)
+
+
 
