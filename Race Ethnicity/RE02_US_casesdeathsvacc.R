@@ -225,6 +225,10 @@ deathsdata_sex <- jsonlite::fromJSON(raw_data)[[5]] %>% join(sexdemog2) %>%
          date=as.Date(Sys.Date(),origin="1988-01-01")) %>% select(date,everything()) 
 
 #deaths count missing, adding using following code
+
+deathsTotSex <- as.numeric(jsonlite::fromJSON(raw_data)[[5]] %>% filter(sex_new=="Grand_Total") %>% 
+                             select(Grand_Total))
+
 deathssex <- data.frame(adorn_totals(deathsdata_sex, fill = "",name="total", na.rm = TRUE)) %>%
   mutate(totaldeaths=ifelse(demographic=="total",totaldeaths/4,totaldeaths))
 deathssex$deaths[deathssex$demographic=="total"] <- deathsTotSex
