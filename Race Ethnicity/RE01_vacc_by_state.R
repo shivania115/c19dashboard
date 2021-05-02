@@ -4,6 +4,7 @@
 # Pooja's Onedrive sync folder path
 loc = "/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data"
 
+trial = "/Users/poojanaik/Desktop"
 
 library(tidyverse)
 library(tidyr)
@@ -15,10 +16,10 @@ library(dplyr)
 
 
 rawpath <- "/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Raw/RaceEthnicity"
-setwd(rawpath)
+setwd(trial)
 
 # downloading data from github jhu
-download.file(path=rawpath,"https://github.com/KFFData/COVID-19-Data/archive/refs/heads/kff_master.zip", destfile = "COVID-19-Data-kff_master.zip")
+download.file(path=trial,"https://github.com/KFFData/COVID-19-Data/archive/refs/heads/kff_master.zip", destfile = "COVID-19-Data-kff_master.zip")
 unzip(zipfile = "COVID-19-Data-kff_master.zip")
 
 
@@ -51,7 +52,7 @@ kffvaccstate = as_tibble(ldply(finalfiles, read.csv)) %>%
                 Known_ethnicity= "X..of.Vaccinations.with.Known.Ethnicity" ,                   
                 Unknown_ethnicity= "X..of.Vaccinations.with.Unknown.Ethnicity" ) 
 
-kffvaccstate[ , 3:13 ][ kffvaccstate[ ,3:13 ] == "<.01" ] <- "0"
+kffvaccstate[ , 3:13 ][ kffvaccstate[ ,3:13 ] == "<.01" ] <- "0.05"
 
 str(kffvaccstate)  
 varnam <- colnames(kffvaccstate)[4:14]
@@ -62,40 +63,49 @@ kffvaccstate2 <- kffvaccstate %>%
   # mutate_if(is.numeric, ~replace(., is.na(.), -9999)) %>%
   mutate(inclNonhispanic = ifelse(inclHispanic=="" & Unknown_race==Unknown_ethnicity,1,NA),
          inclHispanic=ifelse(inclHispanic=="Yes",1,NA),
-         Unknown_race_ethnicity=ifelse(inclNonhispanic==1,Unknown_race,NA))
+         Known_race_ethnicity=ifelse(inclNonhispanic==1,Known_race,NA))
 
 kffvaccstate2 <- kffvaccstate2 %>% 
   select(date,statename,inclHispanic,inclNonhispanic,White,African_American,Asian,American_Native,NHPI, Other_race,everything())
 
-kffvaccstate2 <- kffvaccstate2 %>% 
-  mutate(sumRace = ifelse(inclHispanic==1,rowSums(.[5:10],na.rm=TRUE),NA),
-         sumRaceEth = ifelse(inclNonhispanic==1,rowSums(.[5:11],na.rm=TRUE),NA))
 
-vaccstate <- gather(kffvaccstate2,
+kffvaccstate3 <- kffvaccstate2 %>% 
+  mutate(sumRace = ifelse(inclHispanic==1,rowSums(.[5:10],na.rm=TRUE),NA),
+         sumRaceEth = ifelse(inclNonhispanic==1,rowSums(.[5:11],na.rm=TRUE),NA),
+         dataReported= case_when(
+           is.na(White) ~ "No",
+           TRUE ~ "Yes"),
+         stateReports = case_when(
+           dataReported=="No" ~ "None",
+           dataReported=="Yes" & inclHispanic==1 ~ "Hisp and NonHisp Races",
+           dataReported=="Yes" & inclNonhispanic==1 ~ "Non-Hispanic Races only", 
+           TRUE ~ "Unknown")) 
+
+
+vaccstate <- gather(kffvaccstate3,
                     key="race",
                     value="percentVaccinated",
                     5:16) %>%
   arrange(statename,race) %>%
-  filter(!race=="Known_race",!race=="Known_ethnicity") %>%
+  filter(!race=="Unknown_race",!race=="Unknown_ethnicity") %>%
   mutate(percentVaccinated=round(percentVaccinated,2),
          inclNonhispanic=ifelse(is.na(inclNonhispanic),0,inclNonhispanic),
          inclHispanic=ifelse(is.na(inclHispanic),0,inclHispanic),
          race=gsub("_"," ",race),
-         racelbl = ifelse(inclNonhispanic==1 & !race=="Unknown ethnicity" & !race=="Unknown race" & !race=="Unknown race ethnicity" & !race=="Hispanic",paste("Non-Hispanic",race),
-                          ifelse(inclHispanic==1 & !race=="Unknown ethnicity" & !race=="Unknown race" & !race=="Unknown race ethnicity"& !race=="Hispanic",paste(race,"Alone"), race)),
+         racelbl = ifelse(inclNonhispanic==1 & !race=="Known ethnicity" & !race=="Known race" & !race=="Known race ethnicity" & !race=="Hispanic",paste("Non-Hispanic",race), race),
          pctVaccRace=ifelse(inclHispanic==1,percentVaccinated,NA),
          pctVaccRaceEthn=ifelse(inclNonhispanic==1,percentVaccinated,NA),
-         pctUnknownRace=ifelse(inclHispanic==1&race=="Unknown race",percentVaccinated,NA),
-         pctUnknownEthn=ifelse(inclHispanic==1&race=="Unknown ethnicity",percentVaccinated,NA),
-         pctUnknownRaceEthn=ifelse(inclNonhispanic==1&race=="Unknown race ethnicity",percentVaccinated,NA)) 
+         pctKnownRace=ifelse(inclHispanic==1&race=="Known race",percentVaccinated,NA),
+         pctKnownEthn=ifelse(inclHispanic==1&race=="Known ethnicity",percentVaccinated,NA),
+         pctKnownRaceEthn=ifelse(inclNonhispanic==1&race=="Known race ethnicity",percentVaccinated,NA)) 
 
 
-vaccstate2 <- vaccstate[!(vaccstate$race=="Unknown ethnicity"&vaccstate$inclNonhispanic==1),]
-vaccstate3 <- vaccstate2[!(vaccstate2$race=="Unknown race"&vaccstate2$inclNonhispanic==1),]
-vaccstate4 <- vaccstate3[!(vaccstate3$race=="Unknown race ethnicity"&vaccstate3$inclHispanic==1),]
+vaccstate2 <- vaccstate[!(vaccstate$race=="Known ethnicity"&vaccstate$inclNonhispanic==1),]
+vaccstate3 <- vaccstate2[!(vaccstate2$race=="Known race"&vaccstate2$inclNonhispanic==1),]
+vaccstate4 <- vaccstate3[!(vaccstate3$race=="Known race ethnicity"&vaccstate3$inclHispanic==1),]
 
 
-x <- c("White","African American","American Native", "Asian","NHPI", "Other race","Hispanic","Unknown race","Unknown ethnicity","Unknown race ethnicity")
+x <- c("White","African American","American Native", "Asian","NHPI", "Other race","Hispanic","Known race","Known ethnicity","Known race ethnicity")
 
 
 vaccstate_final <- vaccstate4 %>%
@@ -139,10 +149,17 @@ racevacc <- raecdata %>%
   mutate_if(is.numeric, ~ round(. * 100)) %>%
   mutate(state=state/100,race=recode(race,"Black"="African American"))
 
-fulldata <- join(vaccstate_final,racevacc) %>%
-  mutate_if(is.numeric,~replace(., is.na(.), -9999)) %>% arrange(date,statename)
 
-write.csv(fulldata,"/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Race ethnicity/kffstaterace.csv",row.names=F)
+fulldata_ts <- join(vaccstate_final,racevacc) %>%
+  mutate_if(is.numeric,~replace(., is.na(.), -9999)) %>% 
+  arrange(date,statename)
+
+
+fulldata_static <- fulldata_ts %>% filter(date==max(date))
+
+
+write.csv(fulldata_static,"/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Kff Race and Ethnicity/kffstaterace_static.csv",row.names=F)
+write.csv(fulldata_ts,"/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Kff Race and Ethnicity/kffstaterace_ts.csv",row.names=F)
 
 
 
