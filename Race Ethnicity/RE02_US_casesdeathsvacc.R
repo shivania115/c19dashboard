@@ -283,7 +283,7 @@ usdemog2 <- usdemog %>%
 vacclink <- getURL("https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=vaccination_demographics_data")
 vaccdata <- jsonlite::fromJSON(vacclink)[[2]]
 
-df <- vaccdata %>% join(usdemog2) %>% select(-pullid,-insertdate,-census) %>%
+df <- vaccdata %>% join(usdemog2) %>% select(-census) %>%
   dplyr::rename(date=Date,demogLabel=Demographic_category,admDose1=Administered_Dose1,pctAdmDose1=Administered_Dose1_pct_known,
                 pctKnownAdmDose1=Administered_Dose1_pct_US,admDose2=Administered_Dose2,pctAdmDose2=Administered_Dose2_pct_known,
                 pctKnownAdmDose2=Administered_Dose2_pct_US) %>%
@@ -346,5 +346,5 @@ vaccupload <- full_join(mergedVacc23,final_data) %>%
   arrange(demographicVar,demographic)
 
 
-write.csv(vaccupload,"/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/USDemogData.csv",na="",row.names=F)
+write.csv(vaccupload,"/Users/poojanaik/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/USDemogData.csv",na="",row.names=F)
 
