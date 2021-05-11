@@ -2,7 +2,7 @@
 
 ### Working on cleaning this
 # Pooja's Onedrive sync folder path
-loc = "/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data"
+loc = "/Users/poojanaik/OneDrive - Emory University/CovidHealthEquityDashboard/Data"
 
 trial = "/Users/poojanaik/Desktop"
 
@@ -15,7 +15,7 @@ library(cdlTools)
 library(dplyr)
 
 
-rawpath <- "/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Raw/RaceEthnicity"
+rawpath <- "/Users/poojanaik/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Raw/RaceEthnicity"
 setwd(trial)
 
 # downloading data from github jhu
@@ -52,7 +52,7 @@ kffvaccstate = as_tibble(ldply(finalfiles, read.csv)) %>%
                 Known_ethnicity= "X..of.Vaccinations.with.Known.Ethnicity" ,                   
                 Unknown_ethnicity= "X..of.Vaccinations.with.Unknown.Ethnicity" ) 
 
-kffvaccstate[ , 3:13 ][ kffvaccstate[ ,3:13 ] == "<.01" ] <- "0.05"
+kffvaccstate[ , 3:13 ][ kffvaccstate[ ,3:13 ] == "<.01" ] <- "0"
 
 str(kffvaccstate)  
 varnam <- colnames(kffvaccstate)[4:14]
@@ -100,9 +100,9 @@ vaccstate <- gather(kffvaccstate3,
          pctKnownRaceEthn=ifelse(inclNonhispanic==1&race=="Known race ethnicity",percentVaccinated,NA)) 
 
 
-vaccstate2 <- vaccstate[!(vaccstate$race=="Known ethnicity"&vaccstate$inclNonhispanic==1),]
-vaccstate3 <- vaccstate2[!(vaccstate2$race=="Known race"&vaccstate2$inclNonhispanic==1),]
-vaccstate4 <- vaccstate3[!(vaccstate3$race=="Known race ethnicity"&vaccstate3$inclHispanic==1),]
+vaccstate2 <- vaccstate[!(vaccstate$race=="Known ethnicity" & vaccstate$inclNonhispanic==1),]
+vaccstate3 <- vaccstate2[!(vaccstate2$race=="Known race" & vaccstate2$inclNonhispanic==1),]
+vaccstate4 <- vaccstate3[!(vaccstate3$race=="Known race ethnicity" & vaccstate3$inclHispanic==1),]
 
 
 x <- c("White","African American","American Native", "Asian","NHPI", "Other race","Hispanic","Known race","Known ethnicity","Known race ethnicity")
@@ -132,7 +132,7 @@ filedates = list.files(path=datadir, pattern="*.csv", full.names=TRUE) %>%
 
 raecdata = as_tibble(ldply(finalfiles, read.csv)) %>% 
   select(-Footnotes) %>% dplyr::rename(statename=State) %>% 
-  join(read.csv("/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/staticracedata.csv") %>% filter(race=="All Races Combined") %>% select(statename,state)) %>%
+  join(read.csv("/Users/poojanaik/OneDrive - Emory University/COVID19_data_shared/DataUpload/RaceData/staticracedata.csv") %>% filter(race=="All Races Combined") %>% select(statename,state)) %>%
   filter(!is.na(state)) %>%
   mutate(date=rep(filedates,each=51)) %>%
   select(date,state,statename,everything()) %>% 
@@ -158,8 +158,8 @@ fulldata_ts <- join(vaccstate_final,racevacc) %>%
 fulldata_static <- fulldata_ts %>% filter(date==max(date))
 
 
-write.csv(fulldata_static,"/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Kff Race and Ethnicity/kffstaterace_static.csv",row.names=F)
-write.csv(fulldata_ts,"/Users/poojanaik/Applications/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Kff Race and Ethnicity/kffstaterace_ts.csv",row.names=F)
+write.csv(fulldata_static,"/Users/poojanaik/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Kff Race and Ethnicity/kffstaterace_static.csv",row.names=F)
+write.csv(fulldata_ts,"/Users/poojanaik/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/Kff Race and Ethnicity/kffstaterace_ts.csv",row.names=F)
 
 
 
