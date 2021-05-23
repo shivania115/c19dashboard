@@ -6,7 +6,7 @@ f = list.files(path_cpr_raw)
 f = f[regexpr("\\.xlsx",f)>0]
 
 
-source(paste0(path_c19dashboard_repo,"/community profile reports/aux02_functions for cleaning cpr files.R"))
+source(paste0(path_c19dashboard_repo,"/community profile reports/cpraux02_functions for cleaning cpr files.R"))
 
 
 states_cpr_cleaned_list <- map(f,
