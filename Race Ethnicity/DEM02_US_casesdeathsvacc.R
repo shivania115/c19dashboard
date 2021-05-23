@@ -210,7 +210,6 @@ casesdata_sex <- jsonlite::fromJSON(raw_data)[[4]] %>% join(sexdemog2) %>%
          availableCases = ifelse(demographic=="Unknown",floor((1-(cases/totalcases))*100), NA)) %>% select(date,everything()) 
 
 
-
 ########## DEATHS  BY SEX: merging based on sex ###############
 
 raw_data <- getURL("https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=demographic_charts")
