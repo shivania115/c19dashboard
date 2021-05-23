@@ -161,7 +161,7 @@ casesdata <- jsonlite::fromJSON(raw_data)[[2]] %>% join(agedemog2) %>%
 
 raw_data <- getURL("https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=demographic_charts")
 
-deathsdata <- jsonlite::fromJSON(raw_data)[[2]] %>% join(agedemog2) %>% 
+deathsdata <- jsonlite::fromJSON(raw_data)[[3]] %>% join(agedemog2) %>% 
   select(-b) %>% 
   dplyr::rename(deaths=count,demographic=age_group,percentDeaths=Percent) %>%
   mutate(totaldeaths = sum(deaths),
