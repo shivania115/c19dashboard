@@ -21,6 +21,9 @@ invisible(lapply(packages, library, character.only = TRUE))
 
 rm(packages,installed_packages)
 
+##Fixing Date error
+updateTimePassed = as.numeric(format(strptime(Sys.time(),format = "%Y-%m-%d %H:%M:%S"),"%H"))>=19 
+
 
 #############  Race demog popdata ###########
 
@@ -99,7 +102,7 @@ racecdc <- full_join(casesdata_race,deathdata_race) %>%
   mutate(demogLabel = gsub("Non-Hispanic ","",demographic),
          popUS=328239523, #327167439
          demogPop=(round((percentPop/100)*popUS)),
-         date=as.Date(Sys.Date(),origin="1988-01-01")) %>% select(date,everything())
+         date=as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01")))) %>% select(date,everything())
 
 
 rm(casesdata_race,deathdata_race)
@@ -150,7 +153,7 @@ casesdata <- jsonlite::fromJSON(raw_data)[[2]] %>% join(agedemog2) %>%
   mutate(totalcases = sum(cases),
          popUS=328239523, #327167439
          demogPop=(round((percentPop/100)*popUS)),
-         date=as.Date(Sys.Date(),origin="1988-01-01"),
+         date=as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01"))),
          missingCases = ifelse(demographic=="Unknown",ceiling(cases/totalcases*100), NA),
          availableCases = ifelse(demographic=="Unknown",floor((1-(cases/totalcases))*100), NA)) %>% select(date,everything()) 
 
@@ -167,7 +170,7 @@ deathsdata <- jsonlite::fromJSON(raw_data)[[3]] %>% join(agedemog2) %>%
   mutate(totaldeaths = sum(deaths),
          popUS=328239523, #327167439
          demogPop=(round((percentPop/100)*popUS)),
-         date=as.Date(Sys.Date(),origin="1988-01-01"),
+         date=as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01"))),
          missingDeaths = ifelse(demographic=="Unknown",ceiling(deaths/totaldeaths*100), NA),
          availableDeaths = ifelse(demographic=="Unknown",floor((1-(deaths/totaldeaths))*100), NA)) %>% select(date,everything()) 
 
@@ -175,7 +178,7 @@ deathsdata <- jsonlite::fromJSON(raw_data)[[3]] %>% join(agedemog2) %>%
 
 ########## CASES AND DEATHS BY AGE: merging based on age groups ###############
 
-covid_age <- join(casesdata,deathsdata) %>% mutate(demogLabel=demographic,date=as.Date(Sys.Date(),origin="1988-01-01"))  %>%
+covid_age <- join(casesdata,deathsdata) %>% mutate(demogLabel=demographic,as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01"))))  %>%
   mutate(demographicVar="age")
 
 covid_age$demographic <- recode(covid_age$demographic,"Unknown"="Unknown Age")
@@ -191,7 +194,7 @@ sex <- getURL("https://covid.cdc.gov/covid-data-tracker/Content/CoronaViewJson_0
 sexdemog <- as.data.frame(jsonlite::fromJSON(sex)[2])
 colnames(sexdemog) <- sub(".*_percent.", "", colnames(sexdemog))
 sexdemog2 <- sexdemog %>% select(sex_new,col_per_Grand_Total) %>%
-  mutate(percentPop=as.numeric(col_per_Grand_Total)) %>%select(-col_per_Grand_Total)
+  mutate(percentPop=as.numeric(col_per_Grand_Total)) %>% select(-col_per_Grand_Total)
 
 
 ########## CASES  BY SEX: merging based on sex ###############
@@ -205,7 +208,7 @@ casesdata_sex <- jsonlite::fromJSON(raw_data)[[4]] %>% join(sexdemog2) %>%
   mutate(totalcases = sum(cases),
          popUS=328239523, #327167439
          demogPop=(round((percentPop/100)*popUS)),
-         date=as.Date(Sys.Date(),origin="1988-01-01"),
+         date=as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01"))),
          missingCases = ifelse(demographic=="Unknown",ceiling(cases/totalcases*100), NA),
          availableCases = ifelse(demographic=="Unknown",floor((1-(cases/totalcases))*100), NA)) %>% select(date,everything()) 
 
@@ -221,7 +224,10 @@ deathsdata_sex <- jsonlite::fromJSON(raw_data)[[5]] %>% join(sexdemog2) %>%
   mutate(totaldeaths = sum(deaths),
          popUS=328239523, #327167439
          demogPop=(round((percentPop/100)*popUS)),
-         date=as.Date(Sys.Date(),origin="1988-01-01")) %>% select(date,everything()) 
+         date=as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01")))) %>% select(date,everything()) 
+
+
+# date= as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01")))
 
 #deaths count missing, adding using following code
 
@@ -242,7 +248,8 @@ deathsdata_sex <- deathsdata_sex %>%
 ########## CASES AND DEATHS BY SEX: merging based on sex groups ###############
 
 covid_sex <- join(casesdata_sex,deathsdata_sex) %>% 
-  mutate(demogLabel=demographic,date=as.Date(Sys.Date(),origin="1988-01-01"))  %>%
+  mutate(demogLabel=demographic,
+         date=as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01"))))  %>%
   mutate(demographicVar="sex")
 
 covid_sex$demographic <- recode(covid_sex$demographic,"Unknown"="Unknown Sex")
@@ -286,7 +293,7 @@ df <- vaccdata %>% join(usdemog2) %>% select(-census) %>%
   dplyr::rename(date=Date,demogLabel=Demographic_category,admDose1=Administered_Dose1,pctAdmDose1=Administered_Dose1_pct_known,
                 pctKnownAdmDose1=Administered_Dose1_pct_US,admDose2=Administered_Dose2,pctAdmDose2=Administered_Dose2_pct_known,
                 pctKnownAdmDose2=Administered_Dose2_pct_US) %>%
-  mutate(date=as.Date(date,origin="1988-01-01"),
+  mutate(date=as.Date(ifelse(updateTimePassed==TRUE,as.Date(Sys.Date(),origin="1988-01-01"),as.Date(Sys.Date()-1,origin="1988-01-01"))),
          demographicVar = ifelse(str_detect(demogLabel, "Age"),"vaccineAge",ifelse(str_detect(demogLabel, "Race"),"vaccineRace",ifelse(str_detect(demogLabel, "Sex"),"vaccineSex","total"))),
          demogLabel = ifelse(demographicVar=="vaccineAge",gsub("Ages_","",demogLabel),
                              ifelse(demographicVar=="vaccineRace",gsub("Race_eth_","",demogLabel),
@@ -302,7 +309,7 @@ df2 <- df %>% mutate(demogLabel = ifelse(demographicVar=="vaccineAge",gsub("_yrs
                                          ifelse(demographicVar=="vaccineRace",gsub("NH","",demogLabel),demogLabel)))
 
 
-df2$demogLabel <- revalue(df2$demogLabel,c("<18yrs"="<18",
+df2$demogLabel <- revalue(df2$demogLabel,c("<12yrs"="<12",
                                            "Age_known" = "Unknown",
                                            "Age_unknown" = "unknown",
                                            "known"="Unknown",
@@ -341,6 +348,7 @@ mergedVacc23$demographic[mergedVacc23$demographicVar=="age" & mergedVacc23$demog
 
 
 vaccupload <- full_join(mergedVacc23,final_data) %>% 
+  mutate(percentPop=round(percentPop,1)) %>%
   mutate_if(is.numeric, ~replace(., is.na(.), -9999)) %>%
   arrange(demographicVar,demographic)
 
