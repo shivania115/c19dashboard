@@ -61,7 +61,7 @@ if(nrow(new_files)>0){
 # Reading and assigning variable names ------------
 
 
-source(paste0(path_c19dashboard_repo,"/community profile reports/aux02_functions for cleaning cpr files.R"))
+source(paste0(path_c19dashboard_repo,"/community profile reports/cpraux02_functions for cleaning cpr files.R"))
 
 update_files <- list.files(path_cpr_raw)
 update_files = update_files[regexpr("\\.xlsx",update_files)>0]
