@@ -1,13 +1,21 @@
 ###########     SETTING WORKING DIRECTORY   ####################################
 
-#get your working directory
-getwd()
+# setting up drive folder path
+
+cpath = "/Users/poojanaik"
+drivepath = "/OneDrive - Emory University/CovidHealthEquityDashboard"
+boxpath = "/OneDrive - Emory University/COVID19_data_shared" 
 
 
-box1 = "/Users/air/OneDrive - Emory University/COVID19_data_shared" 
+onedrive = paste0(cpath,drivepath)
+setwd(onedrive)
+
+box1 = paste0(cpath,boxpath)
+setwd(box1)
+
 
 local = "/Users/air/Downloads"
-onedrive="/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard"
+
 R.Version()
 
 
@@ -966,6 +974,14 @@ rm(number_of_states,names,contristates,sharedailycases,raw,totnationcases,totaln
 setwd(local)
 ourraw <- read.csv("./nationalraw.csv")
 
+ourraw$X_2013_Urbanization <- recode(ourraw$X_2013_Urbanization,
+                                                       c("Small Metro"="Remote rural areas",
+                                                         "NonCore (Nonmetro)"="Rural areas near cities",
+                                                         "Metropolitan (Nonmetro)"="Small cities",
+                                                         "Medium Metro"="Small suburbs",
+                                                         "Large Fringe Metro"="Large suburbs",
+                                                         "Large Central Metro"="Inner city"))
+
 names(ourraw)
 
 ourraw$malegroup = quantcut(ourraw$male,5)
@@ -986,15 +1002,11 @@ table(ourraw$minoritygroup)
 ourraw$groupquatergroup = quantcut(ourraw$groupquater,5)
 table(ourraw$groupquatergroup)
 
-
-
 ourraw$hispanicgroup = quantcut(ourraw$hispanic,5)
 table(ourraw$hispanicgroup)
 
 ourraw$nativesgroup = quantcut(ourraw$natives,5)
 table(ourraw$nativesgroup)
-
-
 
 ourraw$hhincomegroup = quantcut(ourraw$hhincome,5)
 table(ourraw$hhincomegroup)
