@@ -1,17 +1,13 @@
-
-
-
 ###########     SETTING WORKING DIRECTORY   ####################################
 
 #get your working directory
 getwd()
 
 
-box1 = "/Users/air/Box/COVID19_data_shared" 
-# I recommend setting a local directory even when there's 
-# going to be no file called from your local directory if you're linked to the box1.
+box1 = "/Users/air/OneDrive - Emory University/COVID19_data_shared" 
 
 local = "/Users/air/Downloads"
+onedrive="/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard"
 R.Version()
 
 
@@ -57,10 +53,13 @@ if (!require("naniar")){
   install.packages("naniar")}
 if (!require("zoo")){
   install.packages("zoo")}
+if(!require("mice")){
+  install.packages("mice")}
+if(!require("anytime")){
+  install.packages("anytime")}
 
 
 
- 
 library(base)
 library(tidyverse)
 library(tidyr)
@@ -80,345 +79,281 @@ library(readxl)
 library(stringr)  
 library(naniar)
 library(zoo)
-################  ALASKA ################
-
-alaska <- read.csv("https://opendata.arcgis.com/datasets/797cbc3e398241a2b11e76fc06dd2b8b_0.csv") %>%
-  select(Hospitalized_Cases__Cumulative_,Date_Reported) %>% dplyr::rename(hospTot = Hospitalized_Cases__Cumulative_,
-                                                                          date = Date_Reported) %>%
-  mutate(date = as.Date(date,origin = "1899-12-30"), statename = "Alaska")
-
-#lastbarchart<-read.csv("./DataUpload/Yubin/lastbarcharts_merged.csv")
-#lastbarchart$quintileVar[merged$quintileVa=="cdk"] <- "ckd"
-#write.csv(lastbarchart,"./DataUpload/Yubin/lastbarcharts_merged.csv")
-#################  CALIFORNIA  #####################
-
-# California <- read.csv("https://data.ca.gov/dataset/efd6b822-7312-477c-922b-bccb82025fbe/resource/b6648a0d-ff0a-4111-b80b-febda2ac9e09/download/statewide_testing.csv") %>%
-#   dplyr::rename(tests=tested) %>% mutate(date = as.Date(date,origin = "1899-12-30"), statename = "California") %>% arrange(desc(date))
-
-
-California1 <- read.csv("https://data.ca.gov/dataset/529ac907-6ba1-4cb7-9aae-8966fc96aeef/resource/42d33765-20fd-44b8-a978-b083b7542225/download/hospitals_by_county.csv") %>%
-  select(county,todays_date,hospitalized_covid_patients,all_hospital_beds,icu_available_beds,icu_covid_confirmed_patients) %>%
-  dplyr::rename(hospTot= hospitalized_covid_patients,allBeds=all_hospital_beds,icuBeds=icu_available_beds,icuAdmDaily=icu_covid_confirmed_patients,date = todays_date) %>%
-  mutate(countyname = paste(county,"County, CA", sep=" "),
-         date = as.Date(date,origin = "1899-12-30"),
-         state = 6) %>%
-  select(-county) %>%
-  arrange(desc(date),countyname)
-
-
-California <- aggregate(hospTot~state+date,data=California1,FUN=sum)%>% mutate(statename="California") %>% select(-state)
-
-rm(California1)
-
-####################  MICHIGAN  ##########################
-
-webpage <- read_html("https://www.michigan.gov/coronavirus/0,9753,7-406-98159-523641--,00.html")
-tbls <- html_nodes(webpage, "table")
-tbls_ls <- webpage %>%
-  html_nodes("table") %>%
-  .[6] %>%
-  html_table(fill = TRUE)
-
-datetext <- html_nodes(webpage, "caption")
-datetext_ls <- webpage %>%
-  html_nodes("caption") %>%
-  .[6]
-update <- html_text(datetext_ls)
-string <- "Patient Census as of "
-updatetext <- sub(string,"",update)
-
-
-michiganhosp <- as_tibble(tbls_ls[[1]]) %>% dplyr::rename(date = "Hospital", hospDaily = "COVID-19 Patients", icuCOVID = "COVID-19 Patients in ICU",percentBedOcc = "Bed Occupancy %") %>%
-  filter(date == "Grand Total") %>% mutate(date = updatetext) %>% mutate(date = as.Date(date,format = "%m/%d/%Y"))
-
-
-rm(webpage,datetext,datetext_ls,tbls,tbls_ls,string,update)
-
-
-webpage <- read_html("https://www.michigan.gov/coronavirus/0,9753,7-406-98159-523641--,00.html")
-tbls <- html_nodes(webpage, "table")
-tbls_ls <- webpage %>%
-  html_nodes("table") %>%
-  .[1] %>%
-  html_table(fill = TRUE)
-
-names(tbls_ls[[1]]) <- c("none","Hospital Beds", "Adult \r\n\r\n\t\t\tHospital Beds",
-                         "Hospital \r\n\r\n\t\t\tInpatient Beds",
-                         "Hospital \r\n\r\n\t\t\tInpatient Bed Occupancy" ,
-                         "Adult \r\n\r\n\t\t\tHospital \r\n\r\n\t\t\tInpatient Beds",
-                         "Adult Hospital  \r\n\r\n\t\t\tInpatient Bed Occupancy",
-                         "ICU  Beds" ,
-                         "ICU Bed Occupancy",
-                         "Adult ICU Beds",
-                         "Adult ICU Bed Occupancy",
-                         "Total Ventilators" ,
-                         "Mechanical  \r\n\r\n\t\t\tVentilators  in use")
-
-michiganbeds <- as_tibble(tbls_ls[[1]]) %>% dplyr::rename(date = "none", allBeds = "Hospital Beds", inpatientBedOccupancy = "Hospital \r\n\r\n\t\t\tInpatient Bed Occupancy", icuBeds = "ICU  Beds", icuBedsOccupancy="ICU Bed Occupancy",ventilators= "Total Ventilators",ventilatorsInUse="Mechanical  \r\n\r\n\t\t\tVentilators  in use") %>%
-  filter(date == "Total") %>% mutate(date = updatetext) %>% mutate(date = as.Date(date,format = "%m/%d/%Y")) %>%
-  select(date ,allBeds, inpatientBedOccupancy, icuBeds, icuBedsOccupancy,ventilators,ventilatorsInUse)
-
-
-michigan_pre <- full_join(michiganhosp,michiganbeds)
-
-dateHosp = michigan_pre$date
-
-webpage <- read_html("https://www.michigan.gov/coronavirus/0,9753,7-406-98159-523641--,00.html")
-tbls <- html_nodes(webpage, "table")
-tbls_ls <- webpage %>%
-  html_nodes("table") %>%
-  .[2] %>%
-  html_table(fill = TRUE)
-
-datetext <- html_nodes(webpage, "caption")
-datetext_ls <- webpage %>%
-  html_nodes("caption") %>%
-  .[2]
-update <- html_text(datetext_ls)
-
-
-michiganhospt <- as_tibble(tbls_ls[[1]]) %>% select("HCC Region",Total)
-michiganhospt2 <- spread(michiganhospt, key="HCC Region", value=Total) %>%
-  select("Adult Confirmed-Positive\r\n\t\t\tCOVID","ICU Adult Confirmed-\r\n\t\t\tPositive COVID","Hospitalized Ped\r\n\t\t\tConfirmed-Positive") %>%
-  dplyr::rename(adultCOVIDHosp ="Adult Confirmed-Positive\r\n\t\t\tCOVID",icuAdmDaily="ICU Adult Confirmed-\r\n\t\t\tPositive COVID",pedsCOVIDHosp="Hospitalized Ped\r\n\t\t\tConfirmed-Positive") %>%
-  mutate(date=as.Date(dateHosp,format = "%m/%d/%Y")) %>%
-  select(-adultCOVIDHosp,-pedsCOVIDHosp)
-
-michigan <- full_join(michigan_pre,michiganhospt2) %>% mutate(hospDaily=as.integer(gsub(",","",hospDaily)),
-                                                              allBeds=as.integer(gsub(",","",allBeds)),
-                                                              inpatientBedOccupancy=as.integer(gsub(",","",inpatientBedOccupancy)),
-                                                              icuBeds=as.integer(gsub(",","",icuBeds)),
-                                                              icuBedsOccupancy=as.integer(gsub(",","",icuBedsOccupancy)),
-                                                              ventilators=as.integer(gsub(",","",ventilators)),
-                                                              ventilatorsInUse=as.integer(gsub(",","",ventilatorsInUse)),
-                                                              statename="Michigan")
-str(michigan)
-
-rm(webpage,michiganbeds,dateHosp,michiganhospt,updatetext,michiganhosp,michiganhospt2,datetext,datetext_ls,tbls,tbls_ls,update,michigan_pre)
-
-
-
-#####################  District of Columbia #################
-
-columbiadate = str_to_title(format(Sys.Date()-1, '%B-%d-%Y'))
-columbiadate<-gsub("(^|[^0-9])0+", "\\1", columbiadate)
-columbiadatezip = format(Sys.Date()-1, '%m-%d-%Y')
-link = paste("https://coronavirus.dc.gov/sites/default/files/dc/sites/coronavirus/page_content/attachments/DC-COVID-19-Data-for-",columbiadate,".xlsx",sep="")
-destfilelink = paste("covid-19-dashboard-District of Columbia-", columbiadatezip,sep="")
-download.file(path=local,link, destfile = destfilelink)
-unzip(zipfile = destfilelink)
-Columbia<-openxlsx::read.xlsx(destfilelink)
-names(Columbia)<-sub("X2", "Date", names(Columbia))
-Columbia$X1 <- NULL
-Columbia$Date<- as.character(Columbia$Date)
-Columbia$Date[Columbia$Date == "Total COVID-19 Patients in DC Hospitals"] <-"hospTot"
-Columbia$Date[Columbia$Date == "Total COVID-19 Patients in ICU"] <-"icuAdm"
-Columbia$Date[Columbia$Date == "ICU Beds Available"] <-"icuBeds"
-Columbia <- rbind(names(Columbia), Columbia)
-Columbia_transposed<-transpose(Columbia)
-names(Columbia_transposed) <- lapply(Columbia_transposed[1, ], as.character)
-Columbia_transposed <- Columbia_transposed[-1,]
-keeps <- c("Date","hospTot","icuAdm","icuBeds")
-Columbia_cleaned = Columbia_transposed[keeps]
-Columbia_cleaned$statename="District of Columbia"
-Columbia_cleaned=Columbia_cleaned%>%
-  mutate(Columbia_cleaned, Date = as.Date(as.numeric(Date), origin = "1899-12-30"))
-
-
-Columbia_test<-openxlsx::read.xlsx(destfilelink,sheet=8)
-names(Columbia_test) <- lapply(Columbia_test[1, ], as.character)
-Columbia_test <- Columbia_test[1:3,]
-Columbia_test1<-transpose(Columbia_test)
-Columbia_test1<-Columbia_test1[-1,]
-names(Columbia_test1)[names(Columbia_test1) == "V1"] <- "Date"
-names(Columbia_test1)[names(Columbia_test1) == "V2"] <- "testDaily"
-names(Columbia_test1)[names(Columbia_test1) == "V3"] <- "positive"
-Columbia_test1=Columbia_test1%>%
-  mutate(Columbia_test1, Date = as.Date(as.numeric(Date), origin = "1899-12-30"))
-
-District_of_Columbia<-dplyr::left_join(x = Columbia_cleaned , y = Columbia_test1)
-names(District_of_Columbia)[names(District_of_Columbia) == "Date"] <- "date"
-
-
-keep1<-c("date","statename","hospTot")
-District_of_Columbia1<-District_of_Columbia[keep1] %>% mutate(hospTot=as.integer(hospTot))
-str(District_of_Columbia1)
-
-
-rm(Columbia,Columbia_cleaned,Columbia_test,Columbia_test1,Columbia_transposed,columbiadate,columbiadatezip,destfilelink,District_of_Columbia)
-
-#####################  Texas   ####################################
-url<-"https://dshs.texas.gov/coronavirus/TexasCOVID-19HospitalizationsOverTimebyTSA.xlsx"
-Texas_hosptot<-openxlsx::read.xlsx(url,sheet=1)
-names(Texas_hosptot) <- lapply(Texas_hosptot[2, ], as.character)
-Texas_hosptot <- Texas_hosptot[25,]
-Texas_hosptot <- rbind(names(Texas_hosptot), Texas_hosptot)
-Texas_hosptot<-transpose(Texas_hosptot)
-Texas_hosptot<- Texas_hosptot[-2,]
-Texas_hosptot<- Texas_hosptot[-1,]
-names(Texas_hosptot)[names(Texas_hosptot) == "V1"] <- "date"
-names(Texas_hosptot)[names(Texas_hosptot) == "V2"] <- "hospTot"
-Texas_hospital<-openxlsx::read.xlsx(url,sheet=4)
-names(Texas_hospital) <- lapply(Texas_hospital[2, ], as.character)
-Texas_hospital <- Texas_hospital[25,]
-Texas_hospital <- rbind(names(Texas_hospital), Texas_hospital)
-Hospital_transposed<-transpose(Texas_hospital)
-Hospital_transposed<- Hospital_transposed[-2,]
-Hospital_transposed<- Hospital_transposed[-1,]
-names(Hospital_transposed)[names(Hospital_transposed) == "V1"] <- "date"
-names(Hospital_transposed)[names(Hospital_transposed) == "V2"] <- "hospCum"
-Texas_ICU<-openxlsx::read.xlsx(url,sheet=7)
-names(Texas_ICU) <- lapply(Texas_ICU[2, ], as.character)
-Texas_ICU<-Texas_ICU[25,]
-Texas_ICU <- rbind(names(Texas_ICU), Texas_ICU)
-ICU_transposed<-transpose(Texas_ICU)
-ICU_transposed<-ICU_transposed[-2,]
-ICU_transposed<-ICU_transposed[-1,]
-names(ICU_transposed)[names(ICU_transposed) == "V1"] <- "date"
-names(ICU_transposed)[names(ICU_transposed) == "V2"] <- "icu admissions"
-Texas_beds<-openxlsx::read.xlsx(url,sheet=9)
-names(Texas_beds) <- lapply(Texas_beds[2, ], as.character)
-Texas_beds<-Texas_beds[25,]
-Texas_beds <- rbind(names(Texas_beds), Texas_beds)
-Texas_beds<-transpose(Texas_beds)
-Texas_beds<-Texas_beds[-2,]
-Texas_beds<-Texas_beds[-1,]
-names(Texas_beds)[names(Texas_beds) == "V1"] <- "date"
-names(Texas_beds)[names(Texas_beds) == "V2"] <- "icuBeds"
-Texas<-dplyr::left_join(x =Hospital_transposed , y = ICU_transposed)
-Texas<-dplyr::left_join(x=Texas, y=Texas_beds)
-Texas<-dplyr::left_join(x =Texas , y = Texas_hosptot)
-Texas$statename="Texas"
-Texas1=Texas%>%
-  mutate(date = as.Date(date,origin = "1899-12-30"))
-
-
-keep5<-c("date","statename","hospTot")
-Texas2<-Texas1[keep5] %>% mutate(hospTot=as.integer(hospTot))
-
-
-
-rm(Hospital_transposed,ICU_transposed,keep1,keep5,link,local,Texas_beds,Texas,Texas_hospital,Texas_hosptot,Texas_ICU,Texas1,url)
-
-
-
-################### MERGING ALL STATE DATA ######################
-
-
-merge <- full_join(alaska,California) %>%
-  #full_join(Texas2) %>%
-  mutate(date=as.Date(date,origin = "1899-12-30")) %>%
-  select(date,statename,hospTot) %>%
-  filter(!is.na(hospTot))
-
-
-summary(merge)
-
-rm(alaska,California,michigan,keeps)
-
-
-
-###############   ADDING PERCENT POSITIVE DATA TO HOSPTEST DATA     #################
-
-positive <- read.csv("https://covidtracking.com/data/download/all-states-history.csv") %>%
-  select(date,state,positive,negative,recovered,hospitalizedCumulative,hospitalizedCurrently,totalTestResults) %>%
-  dplyr::rename(stateabb = state,hospTot=hospitalizedCumulative,hospDaily=hospitalizedCurrently,totaltests=totalTestResults) %>%
-  filter(!stateabb=="AS", !stateabb == "PR", !stateabb == "GU", !stateabb == "VI", !stateabb == "MP")
-
-names(positive)
-# adding state codes
-positive$state <- fips(positive$stateabb)
-
-
-# adding statenames from abbreviated statenames
-positive$statename <- abbr2state(positive$stateabb)
-
-
-positive1 <- positive %>% filter(!statename=="") %>%
-  select(-stateabb) %>%
-  mutate(
-    nation="",
-    county="",
-    percentPositive=round((positive/totaltests)*100,digits=2),
-    below10pctPositive= ifelse(percentPositive<=10,"Yes","No")) %>%
-  select(date,nation,county,state,statename,positive,percentPositive,below10pctPositive,everything()) %>%
-  arrange(desc(date),state) %>%
-  # dplyr::rename(testedPositive = positive,testedNegative=negative) %>%
-  mutate_if(is.numeric, ~replace(., is.na(.), -1))
-
-
-final_hosptest_ts_pre <- positive1 %>% filter(!statename=="California",!statename=="Alaska",!statename=="Texas")
-
-premerge <- positive1 %>%
-  filter(statename=="California"|statename=="Alaska"|statename=="Texas") %>%
-  select(-hospTot)
-
-merged <- join(premerge,merge)
-
-final_hosptest_ts <- full_join(final_hosptest_ts_pre,merged)
-
-# merged hosptest static data from jhu and testing data from COVIDTracker project
-final_hosptest_static <- final_hosptest_ts %>% filter(date==max(date)) %>% mutate_if(is.numeric, ~replace(., is.na(.), -1))
-
-rm(positive,positive1,merged,premerge,final_hosptest_ts_pre,merge)
-
-
-########       !!! WRITE.CSV UNLOCK INSTRUCTIONS !!!        ############
-
-## For MAC users: Highlight the lines you want to unlock and press Command + Shift + C
-## For Windows users: Highlight the lines you want to unlock and press CTRL + Shift + C
-
-################### ***UNLOCK TO EXPORT*** ######################
-setwd(box1)
-write.csv(final_hosptest_ts,"./DataUpload/Hospitalizations and testing/series_hosptest.csv",na="",row.names = FALSE)
-write.csv(final_hosptest_static, "./DataUpload/Hospitalizations and testing/state_level.csv",na="",row.names = FALSE)
-
-
-
-
+library(mice)
+library(anytime)
 
 #################  MERGING HOSPITALIZATION DATA TO COVIDTIMESERIES  ######################
 
 setwd(box1)
 final_hosptest_ts <- read.csv("./DataUpload/Hospitalizations and testing/series_hosptest.csv")
 
-
-setwd(box1)
 our_ts <- read.csv("/Users/air/Desktop/lol/covidtimeseries00.csv") 
 
 
-merged_covidtimeseries <- join(our_ts,final_hosptest_ts)
+#merged_covidtimeseries <- join(our_ts,final_hosptest_ts)
+final_hosptest_ts$date<-anydate(final_hosptest_ts$date)
+final_hosptest_ts<-final_hosptest_ts[,-c(6,8,9,10,11)]
+final_hosptest_ts[,9]<-""
+names(final_hosptest_ts)[9]<-"percent7dayhospDaily"
+final_hosptest_ts<-final_hosptest_ts[
+  with(final_hosptest_ts, order(statename, date)),
+]
+final_hosptest_ts$hospDaily[which(final_hosptest_ts$hospDaily  == -1)] = NA
+final_hosptest_ts$percent7dayhospDaily=100*(final_hosptest_ts$hospDaily-lag(final_hosptest_ts$hospDaily,7))/lag(final_hosptest_ts$hospDaily,14)
+variable<-c("percent7dayhospDaily")
+final_hosptest_ts[, variable][is.na(final_hosptest_ts[, variable])] <- -999
+final_hosptest_ts[, variable][is.infinite(final_hosptest_ts[, variable])] <- -999
+final_hosptest_ts[, variable][is.nan(final_hosptest_ts[, variable])] <- -999
+which(is.na(final_hosptest_ts$percent7dayhospDaily))
+which(is.infinite(final_hosptest_ts$percent7dayhospDaily))
+which(is.nan(final_hosptest_ts$percent7dayhospDaily))
+variable1<-c("hospDaily")
+final_hosptest_ts[, variable1][is.na(final_hosptest_ts[, variable1])] <- -1
+final_hosptest_ts$hospAdmissionper100beds<-""
 
-merged_covidtimeseries$hospTot[which(merged_covidtimeseries$hospTot  == -1)] = NA
+path_c19dashboard_shared_folder="/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard"
+#states_daterange_clean1 <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/2021-04-11/states_date_range_clean.RDS"))
+states_daterange_clean <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/2021-05-23/states_date_range_clean.RDS"))
+states_df_clean <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/2021-05-23/states_df_clean.RDS"))
+counties_daterange_clean <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/2021-05-23/counties_date_range_clean.RDS"))
+counties_df_clean <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports/2021-05-23/counties_df_clean.RDS"))
 
-merged_covidtimeseries$percent14dayhospTot<-100*(merged_covidtimeseries$hospTot-lag(merged_covidtimeseries$hospTot,14))/lag(merged_covidtimeseries$hospTot,14)
-merged_covidtimeseries$percent14dayhospDaily<-100*(merged_covidtimeseries$hospDaily-lag(merged_covidtimeseries$hospDaily,14))/lag(merged_covidtimeseries$hospDaily,14)
+
+# STATES: Example for indicators which belong to same header : "VIRAL (RT-PCR) LAB TESTING: LAST WEEK"
+
+states_example_df <- states_df_clean %>% 
+  dplyr::select(file_name,date_of_file,
+                S01,S02,state,county,
+                S21,S22,S52,S53,S62,S23
+  ) %>% 
+  left_join(states_daterange_clean %>% 
+              dplyr::select(file_name),
+            by = "file_name")
 
 
-variable<-c("percent14dayhospDaily")
-merged_covidtimeseries[, variable][is.na(merged_covidtimeseries[, variable])] <- -999
-merged_covidtimeseries[, variable][is.infinite(merged_covidtimeseries[, variable])] <- -999
-merged_covidtimeseries[, variable][is.nan(merged_covidtimeseries[, variable])] <- -999
-which(is.na(merged_covidtimeseries$percent14dayhospDaily))
-which(is.infinite(merged_covidtimeseries$percent14dayhospDaily))
-which(is.nan(merged_covidtimeseries$percent14dayhospDaily))
 
-variable1<-c("hospTot")
-merged_covidtimeseries[, variable1][is.na(merged_covidtimeseries[, variable1])] <- -1
+counties_example_df <-counties_df_clean%>%
+  dplyr::select(file_name,date_of_file,
+                V01,V02,state,county,
+                V33,V34,V56,V57,V66,V35
+  ) %>% 
+  left_join(counties_daterange_clean %>% 
+              dplyr::select(file_name),
+            by = "file_name")
+
+
+
+states_example_df<-states_example_df[,-c(1,4,6)]
+states_example_df$S62<-states_example_df$S62*100
+names(states_example_df)[1] <- "date"
+names(states_example_df)[2] <- "statename"
+names(states_example_df)[4] <- "percentPositive"
+
+names(states_example_df)[5] <- "totaltests"
+names(states_example_df)[6] <- "hospDaily"
+names(states_example_df)[7] <- "percent7dayhospDaily"
+names(states_example_df)[8] <- "hospAdmissionper100beds"
+names(states_example_df)[9] <- "positivePer100K"
+
+states_example_df<-subset(states_example_df,!statename%in%"Guam"& !statename%in%"United States Virgin Islands"& !statename%in%"Commonwealth of the Northern Mariana Islands"& !statename%in%"American Samoa" & !statename%in%"Puerto Rico")
+library(anytime)
+states_example_df$date<-anydate(states_example_df$date)
+states_example_df<-states_example_df%>%
+  filter(date>="2021-03-08")
+states_example_df<-states_example_df[
+  with(states_example_df, order(statename, date)),
+]
+#states_example_df<-states_example_df[,-c(9)]
+states_example_df$percentPositive<-states_example_df$percentPositive*100
+#states_example_df$percent7dayhospDaily<-states_example_df$percent7dayhospDaily*100
+
+counties_example_df<-counties_example_df[,-c(1,4)]
+counties_example_df$V66<-counties_example_df$V66*100
+counties_example_df$V33<-counties_example_df$V33*100
+#counties_example_df<-counties_example_df[,-c(3)]
+names(counties_example_df)[1] <- "date"
+names(counties_example_df)[2] <- "countyname"
+names(counties_example_df)[5] <- "percentPositive"
+names(counties_example_df)[6] <- "totaltests"
+names(counties_example_df)[7] <- "hospDaily"
+names(counties_example_df)[8] <- "hospAdmissionper100beds"
+names(counties_example_df)[9] <- "percent7dayhospDaily"
+names(counties_example_df)[10] <- "positivePer100K"
+counties_example_df$date<-anydate(counties_example_df$date)
+counties_example_df<-counties_example_df%>%
+  filter(date>="2021-03-08")
+counties_example_df<-counties_example_df[
+  with(counties_example_df, order(countyname, date)),
+]
+counties_example_df[is.na(counties_example_df)]<- -1
+
+
+states_example_df[,10] <- ""
+states_example_df[,11] <- ""
+names(states_example_df)[10]<-"nation"
+names(states_example_df)[11]<-"county"
+final_hosptest_ts[,11] <- ""
+names(final_hosptest_ts)[11]<-"positivePer100K"
+
+final_hosptest_ts<-rbind(final_hosptest_ts,states_example_df)
+final_hosptest_ts<-final_hosptest_ts[
+  with(final_hosptest_ts, order(statename, date)),
+]
+final_hosptest_ts$percent7dayhospDaily<-round(final_hosptest_ts$percent7dayhospDaily,2)
+final_hosptest_ts1<-subset(final_hosptest_ts,date<"2021-03-08")
+final_hosptest_ts2<-subset(final_hosptest_ts,date>="2021-03-07")
+final_hosptest_ts2$positivetoday=final_hosptest_ts2$totaltests*final_hosptest_ts2$percentPositive/100
+detach("package:plyr", unload = TRUE)
+final_hosptest_ts3<-final_hosptest_ts2%>%
+  group_by(statename)%>%
+  mutate(totaltests = cumsum(totaltests))
+final_hosptest_ts3<-final_hosptest_ts3%>%
+  group_by(statename)%>%
+  mutate(positivetoday = cumsum(positivetoday))
+final_hosptest_ts3$percentPositive=final_hosptest_ts3$positivetoday/final_hosptest_ts3$totaltests*100
+final_hosptest_ts3<-final_hosptest_ts3[!(final_hosptest_ts3$date=="2021-03-07"),]
+final_hosptest_ts3<-final_hosptest_ts3[,-c(12)]
+
+final_hosptest_ts4<-rbind(final_hosptest_ts1,final_hosptest_ts3)
+final_hosptest_ts4<-final_hosptest_ts4[
+  with(final_hosptest_ts4, order(statename, date)),
+]
+
+#hh<- data.frame(date=seq(as.Date("2020-03-07"), as.Date("2021-03-28"), by="days"))
+#hh
+final_hosptest_ts5<-final_hosptest_ts4 %>%
+  group_by(statename) %>%
+  tidyr::complete(date = seq.Date(min(date), max(date), by="day"))%>%
+  fill(`statename`)
+final_hosptest_ts6<-final_hosptest_ts5%>%
+  group_by(statename)%>%
+  mutate(state=ifelse(is.na(state),lag(state),state))%>%
+  mutate(percentPositive=ifelse(is.na(percentPositive),lag(percentPositive),percentPositive))%>%
+  mutate(hospDaily=ifelse(is.na(hospDaily),lag(hospDaily),hospDaily))%>%
+  mutate(totaltests=ifelse(is.na(totaltests),lag(totaltests),totaltests))%>%
+  mutate(percent7dayhospDaily=ifelse(is.na(percent7dayhospDaily),lag(percent7dayhospDaily),percent7dayhospDaily))%>%
+  mutate(hospAdmissionper100beds=ifelse(is.na(hospAdmissionper100beds),lag(hospAdmissionper100beds),hospAdmissionper100beds))%>%
+  mutate(positivePer100K=ifelse(is.na(positivePer100K),lag(positivePer100K),positivePer100K))
+
+
+counties_example_df1<-counties_example_df%>%
+  group_by(countyname) %>%
+  tidyr::complete(date = seq.Date(min(date), max(date), by="day"))%>%
+  fill(`countyname`)
+
+counties_example_df2<-counties_example_df1%>%
+  group_by(countyname)%>%
+  mutate(state=ifelse(is.na(state),lag(state),state))%>%
+  mutate(county=ifelse(is.na(county),lag(county),county))%>%
+  mutate(percentPositive=ifelse(is.na(percentPositive),lag(percentPositive),percentPositive))%>%
+  mutate(hospDaily=ifelse(is.na(hospDaily),lag(hospDaily),hospDaily))%>%
+  mutate(totaltests=ifelse(is.na(totaltests),lag(totaltests),totaltests))%>%
+  mutate(percent7dayhospDaily=ifelse(is.na(percent7dayhospDaily),lag(percent7dayhospDaily),percent7dayhospDaily))%>%
+  mutate(hospAdmissionper100beds=ifelse(is.na(hospAdmissionper100beds),lag(hospAdmissionper100beds),hospAdmissionper100beds))%>%
+  mutate(positivePer100K=ifelse(is.na(positivePer100K),lag(positivePer100K),positivePer100K))
+
+
+#final_hosptest_ts2$totaltests[final_hosptest_ts2$date=="2021-03-08"]<-final_hosptest_ts2$totaltests[final_hosptest_ts2$date=="2021-03-08"]+final_hosptest_ts2$totaltests[final_hosptest_ts2$date=="2021-03-07"]
+#final_hosptest_ts2$totaltests=final_hosptest_ts2$totaltests+lag(final_hosptest_ts2$totaltests)
+final_hosptest_ts6$county<-as.integer(final_hosptest_ts6$county)
+final_hosptest_ts6$nation<-as.integer(final_hosptest_ts6$nation)
+our_ts$date<-anydate(our_ts$date)
+merged_covidtimeseries <- left_join(our_ts,final_hosptest_ts6)
+counties_example_df2$hospAdmissionper100beds<-as.character(counties_example_df2$hospAdmissionper100beds)
+
+variable<-c("percentPositive","hospDaily","totaltests","percent7dayhospDaily","hospAdmissionper100beds","positivePer100K")
+
+merged_covidtimeseries[, variable][is.na(merged_covidtimeseries[, variable])] <- ""
+counties_example_df2$percentPositive<-as.character(counties_example_df2$percentPositive)
+counties_example_df2$hospDaily<-as.character(counties_example_df2$hospDaily)
+counties_example_df2$totaltests<-as.character(counties_example_df2$totaltests)
+counties_example_df2$percent7dayhospDaily<-as.character(counties_example_df2$percent7dayhospDaily)
+counties_example_df2$hospAdmissionper100beds<-as.character(counties_example_df2$hospAdmissionper100beds)
+
+counties_example_df2$positivePer100K<-as.character(counties_example_df2$positivePer100K)
+#merged_covidtimeseries1<-left_join(merged_covidtimeseries,counties_example_df2)
+merged_covidtimeseries$percentPositive<-as.character(merged_covidtimeseries$percentPositive)
+merged_covidtimeseries$hospDaily<-as.character(merged_covidtimeseries$hospDaily)
+merged_covidtimeseries$totaltests<-as.character(merged_covidtimeseries$totaltests)
+merged_covidtimeseries$percent7dayhospDaily<-as.character(merged_covidtimeseries$percent7dayhospDaily)
+merged_covidtimeseries$hospAdmissionper100beds<-as.character(merged_covidtimeseries$hospAdmissionper100beds)
+merged_covidtimeseries$positivePer100K<-as.character(merged_covidtimeseries$positivePer100K)
 str(merged_covidtimeseries)
+str(counties_example_df2)
+merged_covidtimeseries1 <- left_join(merged_covidtimeseries, counties_example_df2, by = c("date", "state", "county"))%>% 
+  transmute(
+    date = date,
+    state = state,
+    county = county,
+    hospDaily = coalesce(hospDaily.y, hospDaily.x),
+    totaltests = coalesce(totaltests.y, totaltests.x),
+    percentPositive = coalesce(percentPositive.y, percentPositive.x),
+    percent7dayhospDaily=coalesce(percent7dayhospDaily.y,percent7dayhospDaily.x),
+    hospAdmissionper100beds=coalesce(hospAdmissionper100beds.y,hospAdmissionper100beds.x),
+    positivePer100K=coalesce(positivePer100K.y,positivePer100K.x)
+  )
 
-variables  <- c("totaltests","hospTot","hospDaily","positive","percentPositive","negative","recovered","percent14dayhospTot","percent14dayhospDaily")
+covidtimeseries2 <- merged_covidtimeseries%>%
+  select(-variable)
+covidtimeseries2<-left_join(merged_covidtimeseries1,covidtimeseries2)
+unique(covidtimeseries2$date)
+x<-covidtimeseries2[covidtimeseries2$nation==1,] %>% 
+  distinct()
+x<-x[-1,]
+y<-subset(covidtimeseries2,is.na(nation))
+covidtimeseries2<-rbind(y,x)
+#merged_covidtimeseries <- left_join(our_ts,states_example_df)
 
-merged_covidtimeseries[, variables == ""] <- NA
-merged_covidtimeseries[, variables][is.na(merged_covidtimeseries[, variables])] <- -1
+#merged_covidtimeseries$hospTot[which(merged_covidtimeseries$hospTot  == -1)] = NA
 
+#merged_covidtimeseries$percent14dayhospTot<-100*(merged_covidtimeseries$hospTot-lag(merged_covidtimeseries$hospTot,14))/lag(merged_covidtimeseries$hospTot,14)
+#merged_covidtimeseries$percent14dayhospDaily<-100*(merged_covidtimeseries$hospDaily-lag(merged_covidtimeseries$hospDaily,14))/lag(merged_covidtimeseries$hospDaily,14)
+
+
+#variable<-c("percent14dayhospDaily")
+#merged_covidtimeseries[, variable][is.na(merged_covidtimeseries[, variable])] <- -999
+#merged_covidtimeseries[, variable][is.infinite(merged_covidtimeseries[, variable])] <- -999
+#merged_covidtimeseries[, variable][is.nan(merged_covidtimeseries[, variable])] <- -999
+#which(is.na(merged_covidtimeseries$percent14dayhospDaily))
+#which(is.infinite(merged_covidtimeseries$percent14dayhospDaily))
+#which(is.nan(merged_covidtimeseries$percent14dayhospDaily))
+
+#variable1<-c("hospTot")
+#merged_covidtimeseries[, variable1][is.na(merged_covidtimeseries[, variable1])] <- -1
+#str(merged_covidtimeseries)
+
+
+covidtimeseries2$nation[is.na(covidtimeseries2$nation)] <- ""
+covidtimeseries2$nation[covidtimeseries2$nation == TRUE] <- "1"
+covidtimeseries2$state[is.na(covidtimeseries2$state)] <- ""
+covidtimeseries2$county[is.na(covidtimeseries2$county)] <- ""
+
+covidtimeseries2$cases[is.na(covidtimeseries2$cases)] <- -1
+covidtimeseries2$deaths[is.na(covidtimeseries2$deaths)] <- -1
+covidtimeseries2$caserate[is.na(covidtimeseries2$caserate)] <- -1
+covidtimeseries2$covidmortality[is.na(covidtimeseries2$covidmortality)] <- -1
+covidtimeseries2$dailycases[is.na(covidtimeseries2$dailycases)] <- -1
+covidtimeseries2$dailydeaths[is.na(covidtimeseries2$dailydeaths)] <- -1
+covidtimeseries2$caserate7dayfig[is.na(covidtimeseries2$caserate7dayfig)] <- -1
+covidtimeseries2$covidmortality7dayfig[is.na(covidtimeseries2$covidmortality7dayfig)] <- -1
+covidtimeseries2$mean7daycases[is.na(covidtimeseries2$mean7daycases)] <- -1
+covidtimeseries2$mean7daydeaths[is.na(covidtimeseries2$mean7daydeaths)] <- -1
+
+covidtimeseries2$totaltests[is.na(covidtimeseries2$totaltests)] <- -1
+covidtimeseries2$hospDaily[is.na(covidtimeseries2$hospDaily)] <- -1
+covidtimeseries2$cfr[is.na(covidtimeseries2$cfr)] <- -1
+covidtimeseries2$positivePer100K[is.na(covidtimeseries2$positivePer100K)] <- -1
+covidtimeseries2$percentPositive[is.na(covidtimeseries2$percentPositive)] <- -1
+covidtimeseries2$percent14dayDailyCases[is.na(covidtimeseries2$percent14dayDailyCases)] <- -999
+covidtimeseries2$percent14dayDailyDeaths[is.na(covidtimeseries2$percent14dayDailyDeaths)] <- -999
+covidtimeseries2$percent7dayhospDaily[is.na(covidtimeseries2$percent7dayhospDaily)] <- -999
 
 
 #merged_covidtimeseries$percent14dayhospDaily<-100*(mean7daycases-lag14(mean7daycases))/lag14(mean7daycases)
 
 
 # keep the global environment clean 
-rm(final_hosptest_ts,our_ts,variables)
+
 
 
 #######################  MERGING HOSPITAL BEDS DATA WITH COVID TIME SERIES #################
@@ -429,22 +364,23 @@ hospBeds <- read.csv("./Hospitalizations and testing/hospitalbeds_historic.csv")
 names(hospBeds)
 
 hospBeds$statename[hospBeds$statename == "District of C"] <- "District of Columbia"            
-
-final_merged_covidtimeseries <- left_join(merged_covidtimeseries,hospBeds)
+hospBeds$date<-anydate(hospBeds$date)
+covidtimeseries2$state<-as.numeric(covidtimeseries2$state)
+covidtimeseries2$nation<-as.numeric(covidtimeseries2$nation)
+final_merged_covidtimeseries <- left_join(covidtimeseries2,hospBeds)
 variables <- c("bedsAll","bedsCovid","bedsIcu")
 final_merged_covidtimeseries[, variables][is.na(final_merged_covidtimeseries[, variables])] <- -1
 
 # keeping the global environment clean 
-rm(hospBeds,merged_covidtimeseries)
-
-# reset directory
-setwd(box1)
 
 
-variables  <- c("percent14dayCases","percent14dayDailyCases","percent14dayDeaths","percent14dayDailyDeaths")
 
-final_merged_covidtimeseries[,variables]
-final_merged_covidtimeseries[, variables][is.na(final_merged_covidtimeseries[, variables])] <- -999
+
+
+#variables  <- c("percent14dayCases","percent14dayDailyCases","percent14dayDeaths","percent14dayDailyDeaths")
+
+#final_merged_covidtimeseries[,variables]
+#final_merged_covidtimeseries[, variables][is.na(final_merged_covidtimeseries[, variables])] <- -999
 
 
 # final_merged_covidtimeseries$casesfig <- as.numeric(final_merged_covidtimeseries$casesfig)
@@ -465,16 +401,16 @@ stateregions <- merge(stateNames,regiondata,by.x=c("STATENAME","STATE"),by.y=c("
   select(-STATE) %>% 
   mutate(state=sub("^(-?)0", "\\1", sprintf("%s", state)),
          state=as.integer(state))
-
+library(plyr)
 final_merged_covidtimeseries <- join(final_merged_covidtimeseries,stateregions,by="state") %>% select(-statename1)
 
 final_merged_covidtimeseries <- final_merged_covidtimeseries %>% 
-  select(date,nation,state,statename,county,countyname,region,division,Population,X_013_Urbanization,X_013_Urbanization_Code,urbanrural,everything())
+  select(date,nation,state,statename,county,countyname,region,division,Population,X_2013_Urbanization,X_2013_Urbanization_Code,urbanrural,everything())
 
 
-names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_013_Urbanization"] <- "_013_Urbanization"
-names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_013_Urbanization_Code"] <- "_013_Urbanization_Code"
-
+names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_2013_Urbanization"] <- "_013_Urbanization"
+names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_2013_Urbanization_Code"] <- "_013_Urbanization_Code"
+final_merged_covidtimeseries[which(final_merged_covidtimeseries$statename %in% c("Alabama","Georgia")),]
 ################### ***UNLOCK TO EXPORT*** ###############
 ### WRITE.CSV UNLOCK INSTRUCTIONS 
 ## For MAC users: Highlight the lines you want to unlock and press Command + Shift + C 
@@ -485,90 +421,202 @@ names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_01
 # write.csv(final_merged_covidtimeseries,"./DataUpload/Yubin/covidtimeseries.csv", na="", row.names=F)
 # 
 
-setwd(box1)
-local = "/Users/air/Downloads"
+final_merged_covidtimeseries1<-subset(final_merged_covidtimeseries,nation==1)
+final_merged_covidtimeseries1<-final_merged_covidtimeseries1[!duplicated(final_merged_covidtimeseries1),]
+final_merged_covidtimeseries2<-subset(final_merged_covidtimeseries,!statename=="")
 
-setwd(box1)
-write.csv(final_merged_covidtimeseries,"./DataUpload/Yubin/covidtimeseries.csv", na="", row.names=F)
+detach("package:plyr", unload = TRUE)
+final_merged_covidtimeseries2$percentPositive<-as.numeric(final_merged_covidtimeseries2$percentPositive)
+final_merged_covidtimeseries2$hospDaily<-as.numeric(final_merged_covidtimeseries2$hospDaily)
+final_merged_covidtimeseries2$totaltests<-as.numeric(final_merged_covidtimeseries2$totaltests)
+final_merged_covidtimeseries2$percent7dayhospDaily<-as.numeric(final_merged_covidtimeseries2$percent7dayhospDaily)
+final_merged_covidtimeseries2$hospAdmissionper100beds<-as.numeric(final_merged_covidtimeseries2$hospAdmissionper100beds)
+final_merged_covidtimeseries2$positivePer100K<-as.numeric(final_merged_covidtimeseries2$positivePer100K)
+
+final_merged_covidtimeseries3<-final_merged_covidtimeseries2%>%group_by(date)%>%mutate(percentPositive=mean(percentPositive,na.rm=TRUE))
+final_merged_covidtimeseries3<-final_merged_covidtimeseries3[,c(1,15)]
+final_merged_covidtimeseries3<-final_merged_covidtimeseries3[!duplicated(final_merged_covidtimeseries3), ]
+final_merged_covidtimeseries1$percentPositive=final_merged_covidtimeseries3$percentPositive
+final_merged_covidtimeseries4<-final_merged_covidtimeseries2%>%group_by(date)%>%mutate(hospDaily=sum(hospDaily,na.rm=TRUE))
+final_merged_covidtimeseries4<-final_merged_covidtimeseries4[,c(1,13)]
+final_merged_covidtimeseries4<-final_merged_covidtimeseries4[!duplicated(final_merged_covidtimeseries4), ]
+final_merged_covidtimeseries1$hospDaily=final_merged_covidtimeseries4$hospDaily
+final_merged_covidtimeseries5<-final_merged_covidtimeseries2%>%group_by(date)%>%mutate(totaltests=sum(totaltests,na.rm=TRUE))
+final_merged_covidtimeseries5<-final_merged_covidtimeseries5[,c(1,14)]
+final_merged_covidtimeseries5<-final_merged_covidtimeseries5[!duplicated(final_merged_covidtimeseries5), ]
+final_merged_covidtimeseries1$totaltests=final_merged_covidtimeseries5$totaltests
+final_merged_covidtimeseries2<-final_merged_covidtimeseries2%>%mutate(percent7dayhospDaily=ifelse(percent7dayhospDaily==-999.00,0,percent7dayhospDaily))
+final_merged_covidtimeseries6<-final_merged_covidtimeseries2%>%group_by(date)%>%mutate(percent7dayhospDaily=mean(percent7dayhospDaily,na.rm=TRUE))
+final_merged_covidtimeseries6<-final_merged_covidtimeseries6[,c(1,16)]
+final_merged_covidtimeseries6<-final_merged_covidtimeseries6[!duplicated(final_merged_covidtimeseries6), ]
+final_merged_covidtimeseries1$percent7dayhospDaily=final_merged_covidtimeseries6$percent7dayhospDaily
+final_merged_covidtimeseries7<-final_merged_covidtimeseries2%>%group_by(date)%>%mutate(hospAdmissionper100beds=mean(hospAdmissionper100beds,na.rm=TRUE))
+final_merged_covidtimeseries7<-final_merged_covidtimeseries7[,c(1,17)]
+final_merged_covidtimeseries7<-final_merged_covidtimeseries7[!duplicated(final_merged_covidtimeseries7), ]
+final_merged_covidtimeseries1$hospAdmissionper100beds=final_merged_covidtimeseries7$hospAdmissionper100beds
+final_merged_covidtimeseries8<-final_merged_covidtimeseries2%>%group_by(date)%>%mutate(positivePer100K=mean(positivePer100K,na.rm=TRUE))
+final_merged_covidtimeseries8<-final_merged_covidtimeseries8[,c(1,18)]
+final_merged_covidtimeseries8<-final_merged_covidtimeseries8[!duplicated(final_merged_covidtimeseries8), ]
+final_merged_covidtimeseries1$positivePer100K=final_merged_covidtimeseries8$positivePer100K
+
+
+final_merged_covidtimeseries1$percentPositive[is.nan(final_merged_covidtimeseries1$percentPositive)]<--1
+final_merged_covidtimeseries1$hospDaily[is.nan(final_merged_covidtimeseries1$hospDaily)]<--1
+final_merged_covidtimeseries1$totaltests[is.nan(final_merged_covidtimeseries1$totaltests)]<--1
+final_merged_covidtimeseries1$percent7dayhospDaily[is.nan(final_merged_covidtimeseries1$percent7dayhospDaily)]<--1
+final_merged_covidtimeseries1$hospAdmissionper100beds[is.nan(final_merged_covidtimeseries1$hospAdmissionper100beds)]<--1
+final_merged_covidtimeseries1$positivePer100K[is.nan(final_merged_covidtimeseries1$positivePer100K)]<--1
+final_merged_covidtimeseries2<-subset(final_merged_covidtimeseries,is.na(nation))
+final_merged_covidtimeseries<-rbind(final_merged_covidtimeseries2,final_merged_covidtimeseries1)
+x<-subset(final_merged_covidtimeseries,nation==1)
+
+final_merged_covidtimeseries$percentPositive <- ifelse(final_merged_covidtimeseries$percentPositive == "", -1, final_merged_covidtimeseries$percentPositive)
+final_merged_covidtimeseries$hospDaily<-ifelse(final_merged_covidtimeseries$hospDaily == "", -1, final_merged_covidtimeseries$hospDaily)
+final_merged_covidtimeseries$totaltests<-ifelse(final_merged_covidtimeseries$totaltests == "", -1, final_merged_covidtimeseries$totaltests)
+final_merged_covidtimeseries$percent7dayhospDaily<-ifelse(final_merged_covidtimeseries$percent7dayhospDaily == "", -1, final_merged_covidtimeseries$percent7dayhospDaily)
+final_merged_covidtimeseries$hospAdmissionper100beds<-ifelse(final_merged_covidtimeseries$hospAdmissionper100beds == "", -1, final_merged_covidtimeseries$hospAdmissionper100beds)
+final_merged_covidtimeseries$positivePer100K<-ifelse(final_merged_covidtimeseries$positivePer100K == "", -1, final_merged_covidtimeseries$positivePer100K)
+
+final_merged_covidtimeseries<-subset(final_merged_covidtimeseries,!is.na(date))
+
+
+
+
+
+#final_merged_covidtimeseries<-read.csv("/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/covidtimeseries.csv")
+county<-subset(final_merged_covidtimeseries,!countyname=="")
+rest<-subset(final_merged_covidtimeseries,countyname=="")
+
+
+
+final_merged_covidtimeseries1<-county%>%group_by(countyname,date)%>%
+  mutate(percentPositive1=lag(percentPositive))%>%
+  mutate(hospDaily1=lag(hospDaily))%>%
+  mutate(totaltests1=lag(totaltests))%>%
+  mutate(percent7dayhospDaily1=lag(percent7dayhospDaily))%>%
+  mutate(hospAdmissionper100beds1=lag(hospAdmissionper100beds))%>%
+  mutate(positivePer100K1=lag(positivePer100K))
+
+final_merged_covidtimeseries2<-rest%>%group_by(statename,date)%>%
+  mutate(percentPositive1=lag(percentPositive))%>%
+  mutate(hospDaily1=lag(hospDaily))%>%
+  mutate(totaltests1=lag(totaltests))%>%
+  mutate(percent7dayhospDaily1=lag(percent7dayhospDaily))%>%
+  mutate(hospAdmissionper100beds1=lag(hospAdmissionper100beds))%>%
+  mutate(positivePer100K1=lag(positivePer100K))
+
+county$percentPositive[county$date=="2021-04-03"]<-final_merged_covidtimeseries1$percentPositive1[final_merged_covidtimeseries1$date=="2021-04-03"]
+county$hospDaily[county$date=="2021-04-03"]<-final_merged_covidtimeseries1$hospDaily1[final_merged_covidtimeseries1$date=="2021-04-03"]
+county$totaltests[county$date=="2021-04-03"]<-final_merged_covidtimeseries1$totaltests1[final_merged_covidtimeseries1$date=="2021-04-03"]
+county$percent7dayhospDaily[county$date=="2021-04-03"]<-final_merged_covidtimeseries1$percent7dayhospDaily1[final_merged_covidtimeseries1$date=="2021-04-03"]
+county$hospAdmissionper100beds[county$date=="2021-04-03"]<-final_merged_covidtimeseries1$hospAdmissionper100beds1[final_merged_covidtimeseries1$date=="2021-04-03"]
+county$positivePer100K[county$date=="2021-04-03"]<-final_merged_covidtimeseries1$positivePer100K1[final_merged_covidtimeseries1$date=="2021-04-03"]
+
+
+rest$percentPositive[rest$date=="2021-04-03"]<-final_merged_covidtimeseries2$percentPositive1[final_merged_covidtimeseries2$date=="2021-04-03"]
+rest$hospDaily[rest$date=="2021-04-03"]<-final_merged_covidtimeseries2$hospDaily1[final_merged_covidtimeseries2$date=="2021-04-03"]
+rest$totaltests[rest$date=="2021-04-03"]<-final_merged_covidtimeseries2$totaltests1[final_merged_covidtimeseries2$date=="2021-04-03"]
+rest$percent7dayhospDaily[rest$date=="2021-04-03"]<-final_merged_covidtimeseries2$percent7dayhospDaily1[final_merged_covidtimeseries2$date=="2021-04-03"]
+rest$hospAdmissionper100beds[rest$date=="2021-04-03"]<-final_merged_covidtimeseries2$hospAdmissionper100beds1[final_merged_covidtimeseries2$date=="2021-04-03"]
+rest$positivePer100K[rest$date=="2021-04-03"]<-final_merged_covidtimeseries2$positivePer100K1[final_merged_covidtimeseries2$date=="2021-04-03"]
+
+
+
+final_merged_covidtimeseries_x<-rbind(county,rest)
+
+
+
+final_merged_covidtimeseries_x<-final_merged_covidtimeseries_x[
+  with(final_merged_covidtimeseries_x, order(state,county)),
+]
+
+
+
+
+final_merged_covidtimeseries1<-final_merged_covidtimeseries_x%>%
+  group_by(countyname)%>%
+  mutate(percentPositive=ifelse(percentPositive==-1,lag(percentPositive),percentPositive))%>%
+  mutate(hospDaily=ifelse(hospDaily==-1,lag(hospDaily),hospDaily))%>%
+  mutate(totaltests=ifelse(totaltests==-1,lag(totaltests),totaltests))%>%
+  mutate(percent7dayhospDaily=ifelse(percent7dayhospDaily==-1,lag(percent7dayhospDaily),percent7dayhospDaily))%>%
+  mutate(hospAdmissionper100beds=ifelse(hospAdmissionper100beds==-1,lag(hospAdmissionper100beds),hospAdmissionper100beds))%>%
+  mutate(positivePer100K=ifelse(positivePer100K==-1,lag(positivePer100K),positivePer100K))
+final_merged_covidtimeseries1<-final_merged_covidtimeseries1%>%
+  group_by(countyname)%>%
+  mutate(percentPositive=ifelse(percentPositive==-1,lag(percentPositive),percentPositive))%>%
+  mutate(hospDaily=ifelse(hospDaily==-1,lag(hospDaily),hospDaily))%>%
+  mutate(totaltests=ifelse(totaltests==-1,lag(totaltests),totaltests))%>%
+  mutate(percent7dayhospDaily=ifelse(percent7dayhospDaily==-1,lag(percent7dayhospDaily),percent7dayhospDaily))%>%
+  mutate(hospAdmissionper100beds=ifelse(hospAdmissionper100beds==-1,lag(hospAdmissionper100beds),hospAdmissionper100beds))%>%
+  mutate(positivePer100K=ifelse(positivePer100K==-1,lag(positivePer100K),positivePer100K))
+
+final_merged_covidtimeseries1<-final_merged_covidtimeseries1[
+  with(final_merged_covidtimeseries1, order(statename,state,date)),
+]
+write.csv(final_merged_covidtimeseries1,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/covidtimeseries.csv", na="", row.names=F)
 setwd(local)
-write.csv(final_merged_covidtimeseries,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/covidtimeseries.csv", na="", row.names=F)
+write.csv(final_merged_covidtimeseries1,"/Users/air/Downloads/covidtimeseries.csv", na="", row.names=F)
 
-####################################IOWA Issue####################################
-setwd("/Users/air/Downloads/Community Profile")
-
-filenames <- list.files(pattern=".xlsx")
-
-df.list <- lapply(filenames, function(x) read_excel(x, sheet="Counties", col_names =T)[,c(1,2,6,27,29)])
-
-colnames<-c("county","fips","state","cases","deaths")
-df.list <-lapply(df.list, setNames, colnames)
-df.list <-lapply(df.list, function(x) {x <- x[-1, ]})
-df.list <-lapply(df.list, function(x) {x <- subset(x,state=="IA"|state=="OK")})
-
-df.list <-lapply(df.list, function(x) {x <- x[!x$county%in%"Unallocated, IA",]})
-df.list <-lapply(df.list, function(x) {x <- x[!x$county%in%"Unallocated, OK",]})
-df.list <-lapply(df.list, function(x) {x<-x[
-  with(x, order(county, cases)),
-]})
-
-df.list[1]<-lapply(df.list[1], function(x) within(x, date<-c("2021-03-08")))
-df.list[2]<-lapply(df.list[2], function(x) within(x, date<-c("2021-03-09")))
-df.list[3]<-lapply(df.list[3], function(x) within(x, date<-c("2021-03-10")))
-df.list[4]<-lapply(df.list[4], function(x) within(x, date<-c("2021-03-11")))
-df.list[5]<-lapply(df.list[5], function(x) within(x, date<-c("2021-03-12")))
-df.list[6]<-lapply(df.list[6], function(x) within(x, date<-c("2021-03-14")))
-df.list[7]<-lapply(df.list[7], function(x) within(x, date<-c("2021-03-15")))
-df.list[8]<-lapply(df.list[8], function(x) within(x, date<-c("2021-03-16")))
-df.list[9]<-lapply(df.list[9], function(x) within(x, date<-c("2021-03-17")))
-df.list[10]<-lapply(df.list[10], function(x) within(x, date<-c("2021-03-18")))
-df.list[11]<-lapply(df.list[11], function(x) within(x, date<-c("2021-03-19")))
-df.list[12]<-lapply(df.list[12], function(x) within(x, date<-c("2021-03-21")))
-df.list[13]<-lapply(df.list[13], function(x) within(x, date<-c("2021-03-22")))
-df.list[14]<-lapply(df.list[14], function(x) within(x, date<-c("2021-03-23")))
-df.list[15]<-lapply(df.list[15], function(x) within(x, date<-c("2021-03-24")))
-a<-ldply (df.list, data.frame)
-a$cases<-as.integer(a$cases)
-a$deaths<-as.integer(a$deaths)
-a$state<-abbr2state(a$state)
-a$county<-gsub("(.*),.*", "\\1", a$county)
-a$county<-sub(" .*", "", a$county)
-a$fips<-as.integer(a$fips)
-library(anytime)
-a$date<-anydate(a$date)
-str(a)
-#setwd(local)
-#library(openxlsx)
-#iowa<-write.xlsx(a,'iowa.xlsx')
-
-iowa<-write.csv(a,'/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Processed/iowa_oklahoma.csv')
-
-####################################Hospitaliazation Issue####################################
-setwd("/Users/air/Downloads/Community Profile")
-
-filenames <- list.files(pattern=".xlsx")
-
-hosp.list <- lapply(filenames, function(x) read_excel(x, sheet="", col_names =T)[,c(1,2,6,27,29)])
+ts_data<-read.csv("/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/covidtimeseries.csv")
 
 
+#nationalraw state level united states percent population 18 plus 65 plus 
 #################  MERGING HOSPITALIZATION DATA TO NATIONALRAW  ######################
-
-setwd(local)
 
 our_static <- read.csv("/Users/air/Desktop/lol/nationalraw0.csv")
 
 our_static[which(our_static$state %in% c(19)),]
 our_static$date
 our_static$caserate7dayfig[our_static$state==19]
-setwd(box1)
-final_hosptest_ts <- read.csv("./DataUpload/Hospitalizations and testing/series_hosptest.csv") %>%
-  filter(date==max(our_static$date)) 
 
-merged_nationalraw <- join(our_static,final_hosptest_ts)
+final_hosptest_ts7<-final_hosptest_ts6%>%
+  filter(date==max(final_hosptest_ts6$date)) 
+#final_hosptest_ts7<-final_hosptest_ts7[,-c(2)]
+our_static$date<-anydate(our_static$date)
+final_hosptest_ts7$percentPositive<-as.character(final_hosptest_ts7$percentPositive)
+final_hosptest_ts7$hospDaily<-as.character(final_hosptest_ts7$hospDaily)
+final_hosptest_ts7$totaltests<-as.character(final_hosptest_ts7$totaltests)
+final_hosptest_ts7$percent7dayhospDaily<-as.character(final_hosptest_ts7$percent7dayhospDaily)
+#hosp<-rbind(final_hosptest_ts7,counties_example_df2)
 
-variables  <- c("totaltests","hospTot","hospDaily","positive","percentPositive","negative","recovered")
 
-merged_nationalraw[, variables == ""] <- NA
-merged_nationalraw[, variables][is.na(merged_nationalraw[, variables])] <- -1
+merged_nationalraw <- left_join(our_static,final_hosptest_ts7)
+merged_nationalraw$date<-anydate(merged_nationalraw$date)
+str(merged_nationalraw$totaltests)
+str(counties_example_df2$hospDaily)
+merged_nationalraw$hospDaily<-as.character(merged_nationalraw$hospDaily)
+merged_nationalraw$percentPositive<-as.character(merged_nationalraw$percentPositive)
+merged_nationalraw$totaltests<-as.character(merged_nationalraw$totaltests)
+merged_nationalraw$percent7dayhospDaily<-as.character(merged_nationalraw$percent7dayhospDaily)
+merged_nationalraw$hospAdmissionper100beds<-as.character(merged_nationalraw$hospAdmissionper100beds)
+merged_nationalraw$positivePer100K<-as.character(merged_nationalraw$positivePer100K)
+variable<-c("percentPositive","hospDaily","totaltests","percent7dayhospDaily","hospAdmissionper100beds","positivePer100K")
+counties_example_df3<-counties_example_df2%>%
+  filter(date==max(counties_example_df2$date))
+counties_example_df3<-counties_example_df3[,-c(2)]
+merged_nationalraw1 <- left_join(merged_nationalraw, counties_example_df3, by = c("state", "county"))%>% 
+  transmute(
+    date = date,
+    state = state,
+    county = county,
+    hospDaily = coalesce(hospDaily.y, hospDaily.x),
+    totaltests = coalesce(totaltests.y, totaltests.x),
+    percentPositive = coalesce(percentPositive.y, percentPositive.x),
+    percent7dayhospDaily=coalesce(percent7dayhospDaily.y,percent7dayhospDaily.x),
+    hospAdmissionper100beds=coalesce(hospAdmissionper100beds.y,hospAdmissionper100beds.x),
+    positivePer100K=coalesce(positivePer100K.y,positivePer100K.x)
+  )
+
+merged_nationalraw2 <- merged_nationalraw%>%
+  select(-variable)
+
+merged_nationalraw2 <- left_join(merged_nationalraw2, merged_nationalraw1, by = c("date", "state", "county"))
+
+
+#variables  <- c("totaltests","hospTot","hospDaily","positive","percentPositive","negative","recovered")
+
+merged_nationalraw2[, variable == ""] <- NA
+merged_nationalraw2[, variable][is.na(merged_nationalraw2[, variable])] <- -1
 
 
 
@@ -583,6 +631,7 @@ stateNames <- data.frame(stateNames)
 setwd(box1)
 regiondata <- read.csv("./Pooja/stateregiondata.csv")
 
+
 stateregions <- merge(stateNames,regiondata,by.x=c("STATENAME","STATE"),by.y=c("statename","stateabb")) %>%
   arrange(STATEFP) %>%
   dplyr::rename(statename1=STATENAME,state=STATEFP) %>%
@@ -590,14 +639,17 @@ stateregions <- merge(stateNames,regiondata,by.x=c("STATENAME","STATE"),by.y=c("
   mutate(state=sub("^(-?)0", "\\1", sprintf("%s", state)),
          state=as.integer(state))
 
-merge <- join(merged_nationalraw,stateregions,by="state") %>% select(-statename1)
+library(plyr)
+
+merge <- join(merged_nationalraw2,stateregions,by="state") %>% select(-statename1)
 
 final_merged_nationalraw <- merge %>% 
-  select(date,nation,state,statename,county,countyname,region,Population,X_013_Urbanization,X_013_Urbanization_Code,everything())
+  select(date,nation,state,statename,county,countyname,region,Population,X_2013_Urbanization,X_2013_Urbanization_Code,everything())
 #final_merged_nationalraw<-final_merged_nationalraw[!duplicated(final_merged_nationalraw)]
 ########## Merge CDC Chronic Condition Data to Nationalraw ############
 setwd(box1)
 Chronic_Conditions<-read_excel("./DataUpload/cdc_90519_DS1.xlsx")
+
 #setwd(local)
 
 #nationalraw<-read.csv("./nationalraw.csv")
@@ -666,7 +718,7 @@ write.csv(final_merged_nationalraw,"/Users/air/OneDrive - Emory University/Covid
 # reset directory
 setwd(local)
 write.csv(final_merged_nationalraw,"./nationalraw.csv", na="", row.names=F)
- 
+
 
 
 
@@ -713,7 +765,7 @@ merge <- full_join(Highest10cases,Highest10deaths) %>% select(date,countyname,va
 
 
 ################### ***UNLOCK TO EXPORT*** ###############
-setwd(local)
+
 #write.csv(merge,"./DataUpload/Yubin/Highest10barchart.csv",row.names=FALSE,na="")
 write.csv(merge,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/Highest10barchart.csv",row.names=FALSE,na="")
 
@@ -736,8 +788,8 @@ raw <- read.csv("./nationalraw.csv") %>%
   select(-percent14dayDailyCases)
 
 
-setwd(local)
-data <- read.csv("/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/covidtimeseries.csv") %>% 
+
+data <- final_merged_covidtimeseries %>% 
   left_join(raw) %>% 
   filter(!rank=="") %>%
   select(date,countyname,rank,caserate7day) %>%
@@ -757,8 +809,8 @@ death <- read.csv("./nationalraw.csv") %>%
   select(-percent14dayDailyDeaths)
 
 
-setwd(local)
-deathraw <- read.csv("/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/covidtimeseries.csv") %>% 
+
+deathraw <- final_merged_covidtimeseries %>% 
   left_join(death) %>% 
   filter(!rank=="") %>%
   select(date,countyname,rank,covidmortality7day) %>%
@@ -773,7 +825,7 @@ merge <- full_join(data,deathraw) %>% select(date,countyname,variable,measure,ra
 
 
 ################### ***UNLOCK TO EXPORT*** ###############
-setwd(local)
+
 #write.csv(merge,"./DataUpload/Yubin/Highest10trendlines.csv",row.names=FALSE,na="")
 write.csv(merge,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/Highest10trendlines.csv",row.names=FALSE,na="")
 
@@ -784,13 +836,17 @@ rm(raw,data,deathraw,death,merge)
 
 ######################  MERGING CVI SCORE  ######################
 
-ccvi_states <- openxlsx::read.xlsx("https://covid-static-assets.s3.amazonaws.com/US-CCVI/ccvi-US.xlsx",sheet=1) %>%
+
+#unzip(zipfile="https://covid-static-assets.s3.amazonaws.com/US-CCVI/surgo_ccvi_with_raw_public_indicators.zip", files = "ccvi.xlsx", exdir=".")
+
+ccvi_states <- openxlsx::read.xlsx("/Users/air/Downloads/surgo_ccvi_with_raw_public_indicators/ccvi.xlsx",sheet=1) %>%
   dplyr::rename(statename=stateName,state=FIPS) %>%
   mutate(statename=str_to_title(statename), countyname="", countycode=NA)
 
+
 statecode <- ccvi_states %>% select(statename,state)
 
-ccvi_county <- openxlsx::read.xlsx("https://covid-static-assets.s3.amazonaws.com/US-CCVI/ccvi-US.xlsx",sheet=2) %>%
+ccvi_county <- openxlsx::read.xlsx("/Users/air/Downloads/surgo_ccvi_with_raw_public_indicators/ccvi.xlsx",sheet=2) %>%
   dplyr::rename(statename=stateName,countyname=countyName,countycode=FIPS) %>%
   mutate(statename=str_to_title(statename)) %>% join(statecode)
 
@@ -823,18 +879,18 @@ setwd(box1)
 resseg <- read.csv("./RaceData/residSEg.csv") 
 
 
-setwd(box1)
+
 setwd(local)
 
 nationalraw <- read.csv("./nationalraw.csv")
 # merge with nationalraw
 ressegToNR <- left_join(nationalraw,resseg)
-ressegToNR$X_013_Urbanization_Code  <-  factor(ifelse(ressegToNR$X_013_Urbanization=="",-1,
-                                                      ifelse(ressegToNR$X_013_Urbanization=="Large Central Metro",6,
-                                                             ifelse(ressegToNR$X_013_Urbanization=="Large Fringe Metro",5,
-                                                                    ifelse(ressegToNR$X_013_Urbanization=="Medium Metro",4,
-                                                                           ifelse(ressegToNR$X_013_Urbanization=="Small Metro",3,
-                                                                                  ifelse(ressegToNR$X_013_Urbanization=="Micropolitan (Nonmetro)",2,1)))))))
+ressegToNR$X_2013_Urbanization_Code  <-  factor(ifelse(ressegToNR$X_2013_Urbanization=="",-1,
+                                                       ifelse(ressegToNR$X_2013_Urbanization=="Large Central Metro",6,
+                                                              ifelse(ressegToNR$X_2013_Urbanization=="Large Fringe Metro",5,
+                                                                     ifelse(ressegToNR$X_2013_Urbanization=="Medium Metro",4,
+                                                                            ifelse(ressegToNR$X_2013_Urbanization=="Small Metro",3,
+                                                                                   ifelse(ressegToNR$X_2013_Urbanization=="Micropolitan (Nonmetro)",2,1)))))))
 
 
 
@@ -847,33 +903,31 @@ ressegToNR$region_Code  <- factor(ifelse(ressegToNR$region=="",-1,
 
 
 ################### ***UNLOCK TO EXPORT*** ###############
-setwd(box1)
+
 setwd(local)
 write.csv(ressegToNR,"./nationalraw.csv",row.names=FALSE,na="")
 
-
-setwd(box1)
-write.csv(ressegToNR,"./DataUpload/Yubin/nationalraw.csv",row.names=FALSE,na="")
+x<-subset(ressegToNR,nation=="1")
 
 
 # keep the global environment clean
-rm(resseg,ressegToNR,nationalraw)
+
 
 
 
 
 ########### HOW MANY STATES CONTRIBUTED? ############
 
-setwd(box1)
+
 setwd(local)
-raw <- read.csv("./nationalraw.csv")%>% 
+raw <- ressegToNR%>% 
   filter(nation=="1"|county==""|!statename=="") %>% 
   select(date,state,nation,county,statename,cases,dailycases) %>%
-  mutate(date = as.Date(date,origin = "1899-12-30"))
+  mutate(date = anydate(date))
 #raw1<-raw[!duplicated(raw[,c("statename","state")]),]
 
 raw<-raw%>%
-group_by(statename) %>%
+  group_by(statename) %>%
   slice(n()) 
 
 
@@ -898,10 +952,9 @@ names <- as.data.frame(head(sharedailycases$statename,number_of_states))
 contristates <- as_tibble(apply(names,2,paste,collapse=", ")) %>% dplyr::rename(statenames=value)
 
 
-setwd(box1)
-setwd(local)
+
 jsonlite::write_json(contristates,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/contristates.json")
-jsonlite::write_json(contristates,"./contristates.json")
+
 
 rm(number_of_states,names,contristates,sharedailycases,raw,totnationcases,totalnationdailycases,threshold)
 
@@ -909,7 +962,7 @@ rm(number_of_states,names,contristates,sharedailycases,raw,totnationcases,totaln
 ############  OUTCOME VS COUNTY CHARACTERISTICS DATA TO NATIONAL RAW #########
 
 
-setwd(box1)
+
 setwd(local)
 ourraw <- read.csv("./nationalraw.csv")
 
@@ -982,7 +1035,7 @@ groupquater <- aggregate(cbind(caserate7day,caserate)~groupquatergroup,ourraw,FU
 
 hispanic <- aggregate(cbind(caserate7day,caserate)~hispanicgroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="hispanic") %>% dplyr::rename(quintgroup=hispanicgroup)
 natives <- aggregate(cbind(caserate7day,caserate)~nativesgroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="natives") %>% dplyr::rename(quintgroup=nativesgroup)
-urbanrural <- aggregate(cbind(caserate7day,caserate)~X_013_Urbanization,ourraw,FUN="mean") %>% filter(!X_013_Urbanization=="") %>% mutate(quintileVar="urbanrural",lbl = X_013_Urbanization) %>% dplyr::rename(quintgroup=X_013_Urbanization)
+urbanrural <- aggregate(cbind(caserate7day,caserate)~X_2013_Urbanization,ourraw,FUN="mean") %>% filter(!X_2013_Urbanization=="") %>% mutate(quintileVar="urbanrural",lbl = X_2013_Urbanization) %>% dplyr::rename(quintgroup=X_2013_Urbanization)
 
 hhincome <- aggregate(cbind(caserate7day,caserate)~hhincomegroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="hhincome") %>% dplyr::rename(quintgroup=hhincomegroup)
 region <- aggregate(cbind(caserate7day,caserate)~region,ourraw,FUN="mean") %>% filter(!region=="") %>% mutate(quintileVar="region",lbl = region) %>% dplyr::rename(quintgroup=region)
@@ -1026,7 +1079,7 @@ groupquater_mort <- aggregate(cbind(covidmortality,covidmortality7day)~groupquat
 diabetes_mort <- aggregate(cbind(covidmortality,covidmortality7day)~diabetesgroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="diabetes") %>% dplyr::rename(quintgroup=diabetesgroup)
 hispanic_mort <- aggregate(cbind(covidmortality,covidmortality7day)~hispanicgroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="hispanic") %>% dplyr::rename(quintgroup=hispanicgroup)
 natives_mort <- aggregate(cbind(covidmortality,covidmortality7day)~nativesgroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="natives") %>% dplyr::rename(quintgroup=nativesgroup)
-urbanrural_mort <- aggregate(cbind(covidmortality,covidmortality7day)~X_013_Urbanization,ourraw,FUN="mean") %>% filter(!X_013_Urbanization=="") %>% mutate(quintileVar="urbanrural",lbl = X_013_Urbanization) %>% dplyr::rename(quintgroup=X_013_Urbanization)
+urbanrural_mort <- aggregate(cbind(covidmortality,covidmortality7day)~X_2013_Urbanization,ourraw,FUN="mean") %>% filter(!X_2013_Urbanization=="") %>% mutate(quintileVar="urbanrural",lbl = X_2013_Urbanization) %>% dplyr::rename(quintgroup=X_2013_Urbanization)
 obesity_mort <- aggregate(cbind(covidmortality,covidmortality7day)~obesitygroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="obesity") %>% dplyr::rename(quintgroup=obesitygroup)
 hhincome_mort <- aggregate(cbind(covidmortality,covidmortality7day)~hhincomegroup,ourraw,FUN="mean") %>% mutate(lbl = c("Very Low","Low","Moderate","High","Very High"),quintileVar="hhincome") %>% dplyr::rename(quintgroup=hhincomegroup)
 region_mort <- aggregate(cbind(covidmortality,covidmortality7day)~region,ourraw,FUN="mean") %>% filter(!region=="") %>% mutate(quintileVar="region",lbl = region) %>% dplyr::rename(quintgroup=region)
@@ -1105,8 +1158,8 @@ states_indices <- oxford_indices %>%
 
 setwd(local)
 ourraw <- read.csv("./nationalraw.csv")
-names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_013_Urbanization"] <- "_013_Urbanization"
-names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_013_Urbanization_Code"] <- "_013_Urbanization_Code"
+names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_2013_Urbanization"] <- "_013_Urbanization"
+names(final_merged_covidtimeseries)[names(final_merged_covidtimeseries) == "X_2013_Urbanization_Code"] <- "_013_Urbanization_Code"
 
 # checking
 # nr <- ourraw %>% select(date,nation,statename,state)
@@ -1119,8 +1172,8 @@ indices_data <- join(ourraw,states_indices)
 indices_data<-indices_data %>%
   select(-c("urbanrural"))
 
-names(indices_data )[names(indices_data ) == "X_013_Urbanization"] <- "urbanrural_text"
-names(indices_data )[names(indices_data ) == "X_013_Urbanization_Code"] <- "urbanrural"
+names(indices_data )[names(indices_data ) == "X_2013_Urbanization"] <- "urbanrural_text"
+names(indices_data )[names(indices_data ) == "X_2013_Urbanization_Code"] <- "urbanrural"
 names(indices_data )[names(indices_data ) == "RS_blackwhite"] <- "resSeg"
 names(indices_data )[names(indices_data ) == "region"] <- "region_text"
 names(indices_data )[names(indices_data ) == "region_Code"] <- "region"
@@ -1161,7 +1214,7 @@ ccvi_state<-aggregate(ccvi ~ state, resSeg, mean)
 
 
 #resSeg_state$state<- convert_fips_to_names(
-  #resSeg_state$state,
+#resSeg_state$state,
 #states = NULL,
 #geo_header = "STATE",
 #in_states = NULL
@@ -1280,7 +1333,9 @@ indices_data$ccvi=round(indices_data$ccvi,2)
 indices_data<-indices_data%>%select(-c("diabetes.y","heartdisease.y","ckd.y","copd.y","anycondition.y","obesity.y","diabetesNumber.y","heartdiseaseNumber.y","ckdNumber.y","copdNumber.y","anyconditionNumber.y","obesityNumber.y","resSeg.y","ccvi.y"))
 
 
-indices_data[which(indices_data$statename %in% c("Alabama","Georgia")),]
+#x<-final_merged_covidtimeseries[which(final_merged_covidtimeseries$statename %in% c("Georgia")),]
+#y<-final_merged_covidtimeseries[which(final_merged_covidtimeseries$nation)]
+#z<-subset(final_merged_covidtimeseries,!nation=="")
 indices_data$resSeg
 
 
@@ -1305,9 +1360,7 @@ indices_data[which(indices_data$nation == 1),]$ccvi  <- mean(ccvi_state$ccvi )
 
 
 ########### EXPORTING INDICES DATA ############
-setwd(box1)
-write.csv(indices_data,"./DataUpload/Yubin/nationalraw.csv",row.names=FALSE,na="")
-setwd(local)
+
 write.csv(indices_data,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/nationalraw.csv",row.names=FALSE,na="")
 ##########Vaccination Data####################
 
@@ -1345,12 +1398,13 @@ VaccineTracker<-VaccineTracker[,-c(29:31)]
 ########### TODAY'S VACCINE DATA ############
 today<-getURL("https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=vaccination_data")
 casesdata <- jsonlite::fromJSON(today)[[2]] 
+names(casesdata)
 names(casesdata)[16]<-"percentVaccinatedDose1"
 names(casesdata)[17]<-"percentVaccinatedDose2"
 names(casesdata)[15]<-"Administered_Dose1"
-names(casesdata)[26]<-"Administered_Dose2"
-casesdata<-casesdata[,-c(6,18:25,27:30,39:46,48:50)]
-casesdata<-casesdata[,-c(29:32)]  
+names(casesdata)[28]<-"Administered_Dose2"
+casesdata<-casesdata[,-c(6,18:27,29:30,39:46,48:50,51:72)]
+#casesdata<-casesdata[,-c(29:32)]  
 names(casesdata)[names(casesdata) == "LongName"] <- "statename"
 casesdata<-casesdata[,-c(2,3)]
 casesdata$statename[casesdata$statename== "New York State"] <-"New York"
@@ -1360,60 +1414,17 @@ population<-subset(population,!statename%in%c(""))
 casesdata<-dplyr::left_join(x = casesdata , y = population)
 casesdata$FIPS<-fips(casesdata$statename)
 casesdata<-subset(casesdata,!statename%in%"American Samoa"& !statename%in%"Bureau of Prisons"& !statename%in%"Dept of Defense"& !statename%in%"Federated States of Micronesia"& !statename%in%"Guam"& !statename%in%"Indian Health Svc"& !statename%in%"Marshall Islands"& !statename%in%"Northern Mariana Islands"& !statename%in%"Puerto Rico"& !statename%in%"Republic of Palau"& !statename%in%"Veterans Health"& !statename%in%"Long Term Care"& !statename%in%"Virgin Islands")
-#casesdata<-casesdata[!(casesdata$statename="American Samoa" & casesdata$statename=="Bureau of Prisons"& casesdata$statename=="Dept of Defense"& casesdata$statename=="Federated States of Micronesia"& casesdata$statename=="Guam"& casesdata$statename=="Indian Health Svc"& casesdata$statename=="Marshall Islands"& casesdata$statename=="Northern Mariana Islands"& casesdata$statename=="Puerto Rico"& casesdata$statename=="Republic of Palau"& casesdata$statename=="Veterans Health"& casesdata$statename=="Long Term Care"),]
-#casesdata<-casesdata[-c(4, 6, 11, 14, 16, 20, 22,29, 33, 48, 50, 57, 58, 61, 67), ]
-#duplicated(casesdata$statename)
 
 casesdata<-casesdata[!duplicated(casesdata),]
-casesdata<-casesdata[,c(1:2,28,3:27)]
+casesdata<-casesdata[,c(1:2,26,3:25)]
+
+
 #casesdata<-casesdata[,c(1:2,17,3:16)]
 casesdata[is.na(casesdata)] <- -1
 casesdata$FIPS[casesdata$FIPS==-1] <-"_nation"
 all<-casesdata[!(casesdata$statename=="United States"),]
 casesdata$Population[casesdata$statename=="United States"]<-sum(all$Population)
 casesdata<-casesdata[!duplicated(casesdata),]
-#VaccineTracker$Distributed_Pfizer<--1
-#VaccineTracker$Distributed_Moderna<--1
-#VaccineTracker$Distributed_Janssen<--1
-#VaccineTracker$Distributed_Unk_Manuf<--1
-#VaccineTracker$Series_Complete_Pfizer<--1
-#VaccineTracker$Series_Complete_Moderna<--1
-#VaccineTracker$Series_Complete_Janssen<--1
-#VaccineTracker$Series_Complete_Unk_Manuf<--1
-
-#casesdata$Dist_Per_100K[casesdata$statename=="United States"]<-0
-#casesdata$Admin_Per_100K[casesdata$statename=="United States"]<-0
-#casesdata$Administered_Dose1_Per_100K[casesdata$statename=="United States"]<-0
-#casesdata$Administered_Dose2_Per_100K[casesdata$statename=="United States"]<-0
-#casesdata$Population[casesdata$statename=="United States"]<-0
-#casesdata$percentVaccinated[casesdata$statename=="United States"]<-0
-
-
-#casesdata$Dist_Per_100K[casesdata$statename=="United States"]<-mean(casesdata$Dist_Per_100K)
-
-#casesdata$Admin_Per_100K[casesdata$statename=="United States"]<-mean(casesdata$Admin_Per_100K)
-#casesdata$Administered_Dose1_Per_100K[casesdata$statename=="United States"]<-mean(casesdata$Administered_Dose1_Per_100K)
-#casesdata$Administered_Dose2_Per_100K[casesdata$statename=="United States"]<-mean(casesdata$Administered_Dose2_Per_100K)
-#casesdata$Population[casesdata$statename=="United States"]<-sum(casesdata$Population)
-#casesdata$percentVaccinated[casesdata$statename=="United States"]<-casesdata$Administered_Dose1[casesdata$statename=="United States"]/casesdata$Population[casesdata$statename=="United States"]*100
-#casesdata$percentVaccinated<-gsub("%", "", casesdata$percentVaccinated)
-#casesdata$percentVaccinated=as.numeric(casesdata$percentVaccinated)
-#casesdata$percentVaccinated=round(casesdata$percentVaccinated, 2)
-
-#names(casesdata)[names(casesdata) == "percentVaccinated"] <- "percentVaccinatedDose1"
-#casesdata$percentVaccinatedDose2<-casesdata$Administered_Dose2/casesdata$Population*100
-#casesdata$percentVaccinatedDose2=round(casesdata$percentVaccinatedDose2, 2)
-
-casesdata
-
-#casesdata$Dist_Per_100K_new<-VaccineTracker9$Dist_Per_100K_new[VaccineTracker9$Date=="2021-01-25"]
-#VaccineTracker9$Dist_Per_100K_new[VaccineTracker9$Date=="2021-01-24"]
-
-#casesdata<-casesdata[,-c(13,14)]
-casesdata
-names(casesdata)
-names(VaccineTracker)
-########### MERGE TODAY WITH PREVIOUS VACCINE DATA (CUMULATIVE) ############
 
 
 casesdata$AdministeredPartial<-casesdata$Administered_Dose1-casesdata$Series_Complete_Yes
@@ -1421,8 +1432,9 @@ casesdata$PercentAdministeredPartial<-casesdata$AdministeredPartial/casesdata$Ce
 casesdata$PercentAdministeredPartial<-round(casesdata$PercentAdministeredPartial,1)
 casesdata$percentReceived<-casesdata$Doses_Administered/casesdata$Doses_Distributed
 casesdata$percentReceived<-round(casesdata$percentReceived,1)
-casesdata<-casesdata[,-c(26:27)]
 casesdata<-casesdata[,-c(16)]
+
+
 
 
 VaccineTracker1<-rbind(VaccineTracker,casesdata)
@@ -1431,53 +1443,12 @@ VaccineTracker1<-rbind(VaccineTracker,casesdata)
 VaccineTracker1<-VaccineTracker1[
   with(VaccineTracker1, order(statename, Date)),
 ]
-#VaccineTracker1$percentVaccinated<-gsub("%", "", VaccineTracker1$percentVaccinated)
-#VaccineTracker1$percentVaccinated=as.numeric(VaccineTracker1$percentVaccinated)
-
-
-#VaccineTracker1[, replace][is.na(VaccineTracker1[, replace])] <- -1
 VaccineTracker1$FIPS[VaccineTracker1$FIPS==-1] <-"_nation"
 VaccineTracker1$FIPS[VaccineTracker1$FIPS==""] <-"_nation"
 
-
-#VaccineTracker1<-unique(VaccineTracker1)
-#VaccineTracker2<-subset(VaccineTracker1,statename!="United States")
-#Dist_Per_100K_total<-aggregate(Dist_Per_100K~Date,data=VaccineTracker2,mean)
-#nation<-subset(VaccineTracker1,statename=="United States")
-#nation<-nation %>%
-#select(-c("Dist_Per_100K"))
-  #VaccineTracker3<-left_join(Dist_Per_100K_total,nation)
-
-#VaccineTracker3<-VaccineTracker3 %>%
-#select(-c("Admin_Per_100K"))
-#Admin_Per_100K_total<-aggregate(Admin_Per_100K~Date,data=VaccineTracker2,mean)
-#VaccineTracker4<-left_join(Admin_Per_100K_total,VaccineTracker3)
-
-#VaccineTracker4<-VaccineTracker4 %>%
-#select(-c("Administered_Dose1_Per_100K"))
-#Administered_Dose1_Per_100K_total<-aggregate(Administered_Dose1_Per_100K~Date,data=VaccineTracker2,mean)
-#VaccineTracker5<-left_join(Administered_Dose1_Per_100K_total,VaccineTracker4)
-
-#VaccineTracker5<-VaccineTracker5 %>%
-#select(-c("Administered_Dose2_Per_100K"))
-#Administered_Dose2_Per_100K_total<-aggregate(Administered_Dose2_Per_100K~Date,data=VaccineTracker2,mean)
-#VaccineTracker6<-left_join(Administered_Dose2_Per_100K_total,VaccineTracker5)
-
-#VaccineTracker6<-VaccineTracker6 %>%
-#select(-c("Population"))
-#Population_total<-aggregate(Population~Date,data=VaccineTracker2,sum)
-#VaccineTracker7<-left_join(Population_total,VaccineTracker6)
-#VaccineTracker7$percentVaccinated=VaccineTracker7$Administered_Dose1/VaccineTracker7$Population*100
-#VaccineTracker7<-VaccineTracker7[,-c(19)]
-#VaccineTracker8<-rbind(VaccineTracker2,VaccineTracker7)
-
-#VaccineTracker8$percentVaccinated=round(VaccineTracker8$percentVaccinated, 2)
-#VaccineTracker8<-VaccineTracker8[
-  #with(VaccineTracker8, order(statename, Date)),
-#]
 detach("package:plyr", unload = TRUE)
 VaccineTracker9<-VaccineTracker1%>%group_by(statename) %>%
- mutate(Dist_Per_100K_new = Dist_Per_100K - lag(Dist_Per_100K, default = 0))%>%
+  mutate(Dist_Per_100K_new = Dist_Per_100K - lag(Dist_Per_100K, default = 0))%>%
   mutate(Dist_Per_100K_new=ifelse (Dist_Per_100K_new<0,0,Dist_Per_100K_new))
 
 
@@ -1485,13 +1456,6 @@ VaccineTracker9<-VaccineTracker9[
   with(VaccineTracker9, order(statename, Date)),
 ]
 VaccineTracker9$Dist_Per_100K_new=as.numeric(VaccineTracker9$Dist_Per_100K_new)
-
-
-#names(VaccineTracker9)[names(VaccineTracker9) == "percentVaccinated"] <- "percentVaccinatedDose1"
-#VaccineTracker9$percentVaccinatedDose2<-VaccineTracker9$Administered_Dose2/VaccineTracker9$Population*100
-#VaccineTracker9$percentVaccinatedDose2=round(VaccineTracker9$percentVaccinatedDose2, 2)
-#VaccineTracker9<-VaccineTracker9[,-c(17)]
-
 VaccineTracker0<-VaccineTracker9%>%group_by(statename) %>%
   mutate(Dist_new = Doses_Distributed - lag(Doses_Distributed, default = 0))%>%
   mutate(Dist_new=ifelse (Dist_new<0,0,Dist_new))
@@ -1502,13 +1466,6 @@ VaccineTracker0<-VaccineTracker0[
 casesdata<-casesdata[
   with(casesdata, order(statename, Date)),
 ]
-#VaccineTracker0<-VaccineTracker0[-c(361),]
-
-
-
-#VaccineTracker0$Dist_Per_100K_new<-ifelse(VaccineTracker0$Dist_Per_100K_new==0,lag(VaccineTracker0$Dist_Per_100K_new),VaccineTracker0$Dist_Per_100K_new)
-
-  
 VaccineTracker0<-VaccineTracker0%>%group_by(statename) %>%
   mutate(distDate=ifelse(Dist_new==0,lag(Date),Date)) %>%
   mutate(Dist_Per_100K_new = ifelse (Dist_Per_100K_new==0,lag(Dist_Per_100K_new),Dist_Per_100K_new))%>%
@@ -1518,46 +1475,126 @@ VaccineTracker0<-VaccineTracker0%>%group_by(statename) %>%
   mutate(distDate=ifelse(Dist_new==0,lag(distDate),distDate)) %>%
   mutate(Dist_Per_100K_new = ifelse (Dist_Per_100K_new==0,lag(Dist_Per_100K_new),Dist_Per_100K_new))%>%
   mutate(Dist_new = ifelse (Dist_new==0,lag(Dist_new),Dist_new))
+VaccineTracker0<-VaccineTracker0%>%group_by(statename) %>%
+  mutate(distDate=ifelse(Dist_new==0,lag(distDate),distDate)) %>%
+  mutate(Dist_Per_100K_new = ifelse (Dist_Per_100K_new==0,lag(Dist_Per_100K_new),Dist_Per_100K_new))%>%
+  mutate(Dist_new = ifelse (Dist_new==0,lag(Dist_new),Dist_new))
+
 
 #VaccineTracker0<-VaccineTracker0%>%group_by(statename)%>%mutate(Series_Complete_Yes=ifelse(is.na(Series_Complete_Yes),Administered_Dose2,Series_Complete_Yes))
 
 
-casesdata$Dist_Per_100K_new<-VaccineTracker0$Dist_Per_100K_new[VaccineTracker0$Date=="2021-03-24"]
-casesdata$Dist_new<-VaccineTracker0$Dist_new[VaccineTracker0$Date=="2021-03-24"]
-casesdata$distDate<-VaccineTracker0$distDate[VaccineTracker0$Date=="2021-03-24"]
+casesdata$Dist_Per_100K_new<-VaccineTracker0$Dist_Per_100K_new[VaccineTracker0$Date=="2021-05-25"]
+casesdata$Dist_new<-VaccineTracker0$Dist_new[VaccineTracker0$Date=="2021-05-25"]
+casesdata$distDate<-VaccineTracker0$distDate[VaccineTracker0$Date=="2021-05-25"]
 
 VaccineTracker0$FIPS<-str_remove(VaccineTracker0$FIPS, "^0+")
 VaccineTracker0$PercentAdministeredPartial<-round(VaccineTracker0$PercentAdministeredPartial,1)
 VaccineTracker0$percentReceived<-round(VaccineTracker0$percentReceived,1)
-#VaccineTracker0$percentReceived<-VaccineTracker0$Doses_Administered/VaccineTracker0$Doses_Distributed
-#VaccineTracker0$percentReceived<-round(VaccineTracker0$percentReceived,2)
-
-#casesdata1$PercentAdministeredPartial
-
-#VaccineTracker0$Series_Complete_Yes<-NA
-#VaccineTracker0$Series_Complete_Yes[VaccineTracker0$Date=="2021-03-15"]<-casesdata1$Series_Complete_Yes
-
-
-#VaccineTracker0$AdministeredPartial<-VaccineTracker0$Administered_Dose1-VaccineTracker0$Series_Complete_Yes
-#VaccineTracker0$PercentAdministeredPartial<-VaccineTracker0$AdministeredPartial/VaccineTracker0$Census2019*100
-#VaccineTracker0$PercentAdministeredPartial<-round(VaccineTracker0$PercentAdministeredPartial,2)
-#VaccineTracker0<-VaccineTracker0[,-c(10)]
-
 raw<- jsonlite::fromJSON(today)[[2]] 
-raw<-raw[,c(4,18:25,27:29,38:50)]
+raw<-raw[,c(4,18:30,38:46,48:68)]
 names(raw)[1]<-"statename"
 raw$statename[raw$statename== "New York State"] <-"New York"
 casesdata1<-left_join(casesdata,raw)
 casesdata1[is.na(casesdata1)] <- -1
-#casesdata2<-casesdata1[,-c(26:44,46:49)]
-
-
-#write.csv(VaccineTracker0,"./VaccineTrackertimeseries.csv")
 write.csv(VaccineTracker0,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/VaccineTrackertimeseries.csv",row.names=FALSE,na="")
 write.csv(casesdata1,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/VaccineTrackerstatic.csv",row.names=FALSE,na="")
-write.csv(VaccineTracker0,"./VaccineTrackertimeseries.csv",row.names=FALSE,na="")
-write.csv(casesdata1,"./VaccineTrackerstatic.csv",row.names=FALSE,na="")
+
+library(RCurl)
+library(RJSONIO)
+
+vaccination_county_link <- "https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=vaccination_county_condensed_data"
+vaccination_county <- jsonlite::fromJSON(vaccination_county_link)[2][[1]]
 
 
+date <- unique(vaccination_county$Date)
+path_c19dashboard_shared_folder="/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard"
+write.csv(vaccination_county,paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/CDC_Covid Data Tracker_County Vaccination_",date,".csv"),row.names = FALSE)
+
+f = list.files(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations"))
+f = f[regexpr("CDC_Covid Data Tracker_County Vaccination_",f)>0]
+
+vaccination_ts <- map_dfr(f,.f=function(x){read_csv(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/",x))})
+
+countynames <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/nationalraw.csv")) %>% 
+  distinct(state,county,countyname)
 
 
+names(vaccination_county)[1]<-"Date"
+names(vaccination_county)[3]<-"state_name"
+names(vaccination_county)[5]<-"county_name"
+
+vaccination_county$countyname<- paste(vaccination_county$county_name, vaccination_county$StateAbbr, sep = " County, ")
+vaccination_county$countyname[vaccination_county$state_name=="Louisiana"]<- paste(vaccination_county$county_name[vaccination_county$state_name=="Louisiana"], vaccination_county$StateAbbr[vaccination_county$state_name=="Louisiana"], sep = " Parish, ")
+library(usmap)
+a=countypop
+vaccination_county$countyname[vaccination_county$state_name=="Alaska"]<-paste(a$county[a$abbr=="AK"],vaccination_county$StateAbbr[vaccination_county$state_name=="Alaska"], sep = ", ")
+str(vaccination_county$countyname)
+str(indices_data$countyname)
+vaccination_county$countyname<-trimws(vaccination_county$countyname, "r")
+merge<-left_join(indices_data,vaccination_county)    
+
+merge1<-merge[-c(96:101)]
+names(merge1)[96]<-"seriesComplete18Plus"
+names(merge1)[97]<-"seriesComplete18PlusPopPct"
+names(merge1)[98]<-"seriesComplete65Plus"
+names(merge1)[99]<-"seriesComplete65PlusPopPct"
+names(merge1)[100]<-"seriesCompleteYes"
+names(merge1)[101]<-"seriesCompletePopPct"
+names(merge1)[102]<-"CompletenessPct"
+merge1<-merge1[-c(103)]
+names(merge1)[103]<-"seriesComplete12Plus"
+names(merge1)[104]<-"seriesComplete12PlusPopPct"
+library(openxlsx)
+texas<-openxlsx::read.xlsx("https://www.dshs.texas.gov/immunize/covid19/COVID-19-Vaccine-Data-by-County.xls",sheet=2)
+texas<-texas[-c(1:3,258:259),]
+names(texas)[1]<-"countyname"
+names(texas)[6]<-"seriesCompleteYes"
+texas$seriesCompleteYes<-as.numeric(texas$seriesCompleteYes)
+texas$`Population,.16+`<-as.numeric(texas$`Population,.16+`)
+texas$seriesCompletePopPct<-texas$seriesCompleteYes/texas$`Population,.16+`*100
+texas$seriesCompletePopPct<-round(texas$seriesCompletePopPct,1) 
+texas$People.Vaccinated.with.at.least.One.Dose<-as.numeric(texas$People.Vaccinated.with.at.least.One.Dose)
+texas$CompletenessPct<-texas$seriesCompleteYes/texas$People.Vaccinated.with.at.least.One.Dose*100
+texas$CompletenessPct<-round(texas$CompletenessPct,1)
+texas$countyname<-paste(texas$countyname, "County, TX",sep=" ")
+texas<-texas[-c(2:5,7:12)]
+
+
+merge2<-left_join(merge1,texas,by = c("countyname"))
+#merge2$seriesCompleteYes[merge2$state==48]
+
+
+merge2$seriesCompleteYes.x<-ifelse(is.na(merge2$seriesCompleteYes.x),merge2$seriesCompleteYes.y,merge2$seriesCompleteYes.x)
+merge2$seriesCompletePopPct.x<-ifelse(is.na(merge2$seriesCompletePopPct.x),merge2$seriesCompletePopPct.y,merge2$seriesCompletePopPct.x)
+merge2$CompletenessPct.x<-ifelse(is.na(merge2$CompletenessPct.x),merge2$CompletenessPct.y,merge2$CompletenessPct.x)
+merge2<-merge2[-c(105:108)]
+names(merge2)[names(merge2) == "seriesCompleteYes.x"] <- "seriesCompleteYes"
+names(merge2)[names(merge2) == "seriesCompletePopPct.x"] <- "seriesCompletePopPct"
+names(merge2)[names(merge2) == "CompletenessPct.x"] <- "CompletenessPct"
+variable<-c("seriesComplete18Plus","seriesComplete18PlusPopPct","seriesComplete65Plus","seriesComplete65PlusPopPct","seriesCompleteYes","seriesCompletePopPct","CompletenessPct","seriesComplete12Plus","seriesComplete12PlusPopPct")
+merge2[, variable][is.na(merge2[, variable])] <- -1
+
+
+merge_county<-subset(merge2,!is.na(county))
+merge_state<-subset(merge2,is.na(county)&is.na(nation))
+merge_nation<-subset(merge2,nation==1)
+merge_county1=merge_county
+merge_county1$seriesComplete18PlusPopPct<-ifelse(merge_county$seriesComplete18PlusPopPct==-1,0,merge_county$seriesComplete18PlusPopPct)
+merge_county1$seriesComplete65PlusPopPct<-ifelse(merge_county$seriesComplete65PlusPopPct==-1,0,merge_county$seriesComplete65PlusPopPct)
+x<-aggregate(merge_county1$seriesComplete18PlusPopPct,by=list(state=merge_county1$state),FUN = mean)
+y<-aggregate(merge_county1$seriesComplete65PlusPopPct,by=list(state=merge_county1$state),FUN = mean)
+merge_state$seriesComplete18PlusPopPct<-x$x
+merge_state$seriesComplete65PlusPopPct<-y$x
+merge_nation$seriesComplete18PlusPopPct<-mean(merge_state$seriesComplete18PlusPopPct)
+merge_nation$seriesComplete65PlusPopPct<-mean(merge_state$seriesComplete65PlusPopPct)
+merge_state$seriesComplete18PlusPopPct<-ifelse(merge_state$seriesComplete18PlusPopPct==0,-1,merge_state$seriesComplete18PlusPopPct)
+merge_state$seriesComplete65PlusPopPct<-ifelse(merge_state$seriesComplete65PlusPopPct==0,-1,merge_state$seriesComplete65PlusPopPct)
+merge3<-rbind(merge_state,merge_county,merge_nation)
+
+
+# Sort original data frame by the order of the new data frame
+z<-merge3[match(rownames(merge2), rownames(merge3)),]
+
+
+write.csv(z,"/Users/air/OneDrive - Emory University/CovidHealthEquityDashboard/Data/Upload/nationalraw.csv",row.names=FALSE,na="")
