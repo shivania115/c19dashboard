@@ -14,7 +14,7 @@ f = f[regexpr("CDC_Covid Data Tracker_County Vaccination_",f)>0]
 vaccination_ts <- map_dfr(f,.f=function(x){read_csv(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/",x))})
 
 countynames <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/nationalraw.csv")) %>% 
-  distinct(nation,state,county,countyname)
+  distinct(nation,state,county)
 
 vaccination_ts_cleaned <- vaccination_ts %>% 
   rename(date = Date,
