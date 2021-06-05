@@ -1,5 +1,8 @@
 
 
+# Note:
+# SAS.L353: population_all.RDS Contains other variables which are not available in R
+
 population_all <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC_Urban_Rural/population_all.RDS"))
 
 
@@ -31,10 +34,13 @@ covid_pop <- covid_all %>%
 
 # data checking covid_pop --------
 
-covid_pop %>% 
-  dplyr::select(-date,-nation,-state,-fips,-county) %>% 
-  summarize_all(.funs=function(x) mean(x %in% c(0,NA))) %>% 
-  View()
+if(view_data){
+  (view_covid_pop_summary <- covid_pop %>% 
+    dplyr::select(-date,-nation,-state,-fips,-county) %>% 
+    summarize_all(.funs=function(x) mean(x %in% c(0,NA)))) %>% 
+    View()
+}
+
 
 # covidtimeseries_pop ---------------
 covidtimeseries_pop <- covidtimeseries %>% 

@@ -26,7 +26,7 @@ mergedsocial <- acs2018_5yr_all %>%
 # mergedsocial is exported as nationalraw0.csv
 
 # pending: Variable labelling  ---------
-var_labels_mergedsocial <- read.table(paste0(path_c19dashboard_repo,"/DashboardData/aux01_variable labels"),sep="=",
+var_labels_mergedsocial <- read.table(file=paste0(path_c19dashboard_repo,"/dashboard data/aux01_variable labels.txt"),sep="=",
                                       col.names = c("variable","label")) %>% 
   mutate_all(~as.character(.) %>% trimws(.))
 

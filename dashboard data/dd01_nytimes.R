@@ -53,16 +53,18 @@ county_daily <- nyt_counties %>%
   ungroup() %>% 
   arrange(fips,date) %>% 
   group_by(state,county) %>% 
-  mutate(mean7daydeaths = rollapply(deaths,7,mean,partial=TRUE,align="r"),
-         mean7daycases = rollapply(cases,7,mean,partial=TRUE,align="r"),
+  mutate(mean7daydeaths = rollapply(dailydeaths,7,mean,partial=TRUE,align="r"),
+         mean7daycases = rollapply(dailycases,7,mean,partial=TRUE,align="r"),
          ) %>% 
   mutate(percent14dayCases = case_when(is.na(dplyr::lag(cases,14)) ~ NA_real_,
                                        TRUE ~ 100*(cases/dplyr::lag(cases,14) - 1)),
+         
          percent14dayDailyCases = case_when(is.na(dplyr::lag(mean7daycases,14)) ~ NA_real_,
                                             TRUE ~ 100*(mean7daycases/dplyr::lag(mean7daycases,14) - 1)),
          
          percent14dayDeaths = case_when(is.na(dplyr::lag(deaths,14)) ~ NA_real_,
                                        TRUE ~ 100*(deaths/dplyr::lag(deaths,14) - 1)),
+         
          percent14dayDailyDeaths = case_when(is.na(dplyr::lag(mean7daydeaths,14)) ~ NA_real_,
                                             TRUE ~ 100*(mean7daydeaths/dplyr::lag(mean7daydeaths,14) - 1))) %>% 
   ungroup()
@@ -84,16 +86,18 @@ state_daily <- nyt_states %>%
   ungroup() %>% 
   arrange(fips,date) %>% 
   group_by(state) %>% 
-  mutate(mean7daydeaths = rollapply(deaths,7,mean,partial=TRUE,align="r"),
-         mean7daycases = rollapply(cases,7,mean,partial=TRUE,align="r"),
+  mutate(mean7daydeaths = rollapply(dailydeaths,7,mean,partial=TRUE,align="r"),
+         mean7daycases = rollapply(dailycases,7,mean,partial=TRUE,align="r"),
   ) %>% 
   mutate(percent14dayCases = case_when(is.na(dplyr::lag(cases,14)) ~ NA_real_,
                                        TRUE ~ 100*(cases/dplyr::lag(cases,14) - 1)),
+         
          percent14dayDailyCases = case_when(is.na(dplyr::lag(mean7daycases,14)) ~ NA_real_,
                                             TRUE ~ 100*(mean7daycases/dplyr::lag(mean7daycases,14) - 1)),
          
          percent14dayDeaths = case_when(is.na(dplyr::lag(deaths,14)) ~ NA_real_,
                                         TRUE ~ 100*(deaths/dplyr::lag(deaths,14) - 1)),
+         
          percent14dayDailyDeaths = case_when(is.na(dplyr::lag(mean7daydeaths,14)) ~ NA_real_,
                                              TRUE ~ 100*(mean7daydeaths/dplyr::lag(mean7daydeaths,14) - 1))) %>% 
   ungroup()
@@ -111,16 +115,18 @@ us_daily <- nyt_national %>%
                            TRUE ~ cases - dplyr::lag(cases))
   ) %>% 
   arrange(date) %>% 
-  mutate(mean7daydeaths = rollapply(deaths,7,mean,partial=TRUE,align="r"),
-         mean7daycases = rollapply(cases,7,mean,partial=TRUE,align="r"),
+  mutate(mean7daydeaths = rollapply(dailydeaths,7,mean,partial=TRUE,align="r"),
+         mean7daycases = rollapply(dailycases,7,mean,partial=TRUE,align="r"),
   ) %>% 
   mutate(percent14dayCases = case_when(is.na(dplyr::lag(cases,14)) ~ NA_real_,
                                        TRUE ~ 100*(cases/dplyr::lag(cases,14) - 1)),
+         
          percent14dayDailyCases = case_when(is.na(dplyr::lag(mean7daycases,14)) ~ NA_real_,
                                             TRUE ~ 100*(mean7daycases/dplyr::lag(mean7daycases,14) - 1)),
          
          percent14dayDeaths = case_when(is.na(dplyr::lag(deaths,14)) ~ NA_real_,
                                         TRUE ~ 100*(deaths/dplyr::lag(deaths,14) - 1)),
+         
          percent14dayDailyDeaths = case_when(is.na(dplyr::lag(mean7daydeaths,14)) ~ NA_real_,
                                              TRUE ~ 100*(mean7daydeaths/dplyr::lag(mean7daydeaths,14) - 1)))
 
@@ -135,7 +141,6 @@ mean7day_current <- bind_rows(
   dplyr::filter(!state %in% c(66, 69, 72, 78)) %>% 
   dplyr::select(date,state,county,nation,
                 dailydeaths,mean7daydeaths,
-                dailycases,mean7daycases
                 ) %>%
   
   # CHECK - What is this for? =============
