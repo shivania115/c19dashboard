@@ -25,10 +25,10 @@ states_cpr_testing <- states_df_clean %>%
          testsDaily = S22,
          testsPer100K = S23, # Incorrectly labelled as positivePer100K -----
          hospDaily = S52,
-         hospAdmission = S53,
+         hospAdmissionper100beds = S53,
          percent7dayhospDaily = S62
   ) %>% 
-  dplyr::filter(!state %in% c(66, 69, 72, 78)) %>% 
+  dplyr::filter(!state %in% c(60, 66, 69, 72, 78)) %>% 
   dplyr::filter(date >= "2021-03-08") %>% 
   arrange(statename,date) %>%
   # CHECK Line 128: Why merge with states_daterange_clean in the first place? ---------

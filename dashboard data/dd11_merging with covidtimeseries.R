@@ -1,8 +1,8 @@
 # MERGING HOSPITALIZATION DATA TO COVIDTIMESERIES -------
 
 
-source(paste0(path_c19dashboard_repo,"/DashboardData/aux02_states cpr testing.R"))
-source(paste0(path_c19dashboard_repo,"/DashboardData/aux03_counties cpr testing.R"))
+source(paste0(path_c19dashboard_repo,"/dashboard data/aux02_states cpr testing.R"))
+source(paste0(path_c19dashboard_repo,"/dashboard data/aux03_counties cpr testing.R"))
 
 states_cpr_testing <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/states_cpr_testing.RDS"))
 counties_cpr_testing <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/counties_cpr_testing.RDS"))

@@ -23,7 +23,9 @@ positive <- read.csv("https://covidtracking.com/data/download/all-states-history
               rename(statename = STATENAME),
             by=c("stateabb"="STATE")) %>% 
   arrange(desc(date),state) %>%
-  mutate_if(is.numeric, ~replace(., is.na(.), -1))
+  mutate_if(is.numeric, ~replace(., is.na(.), -1)) %>% 
+  mutate_at(vars(nation,county),function(x) case_when(x == -1 ~ NA_real_,
+                                                       TRUE ~ x))
 
 # Remove Alaska, California, Texas
 final_hosptest_ts_pre <- positive %>% 

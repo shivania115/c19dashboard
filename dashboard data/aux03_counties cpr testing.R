@@ -15,7 +15,7 @@ counties_cpr_testing <- counties_df_clean %>%
          countyname = V01,
          countycode = V02,
          # CHECKLine 169 of Jithin_code.R
-         percentPositiveDaily = V33, # Incorrectly called percentPositive since that was for cumsum proportion in aux02_states cpr testing 
+         percentPositiveDailyV3 = V33, # Incorrectly called percentPositive since that was for cumsum proportion in aux02_states cpr testing 
          # CHECK Line 170 of Jithin_code.R ---------
          testsDaily = V34, # Incorrectly called totaltests
          # CHECK Line 174 of Jithin_code.R ---------

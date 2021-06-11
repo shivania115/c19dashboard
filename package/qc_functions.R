@@ -12,7 +12,7 @@ row_check_total <- function(r_data,df2_data,grouping_vars = c("date")){
   df2_date_summary <- df2_data %>% 
     group_by_at(vars(one_of(grouping_vars))) %>% 
     tally() %>% 
-    rename(sas = n)
+    rename(qc = n)
   
   date_comparison <- full_join(r_date_summary,
                                df2_date_summary,
@@ -25,13 +25,17 @@ row_check_total <- function(r_data,df2_data,grouping_vars = c("date")){
 
 row_check_state <- function(r_data,df2_data,grouping_vars = c("date","state")){
   
+  if(is.null(grouping_vars)){
+    grouping_vars = c("date","state")
+  }
+  
   r_data <- r_data %>% 
     dplyr::filter(!is.na(state),is.na(county))
   
   df2_data <- df2_data %>% 
     dplyr::filter(!is.na(state),is.na(county))
   
-  date_comparison <- row_check_total(r_data,df2_data,grouping_vars)
+  date_comparison <- row_check_total(r_data,df2_data,grouping_vars=grouping_vars)
   
   
   return(date_comparison)
@@ -85,7 +89,7 @@ summary_check_total <- function(r_data,df2_data,r_cols,df2_cols,name_format="{co
   date_comparison <- left_join(r_date_summary %>% 
                                  rename(r = value),
                                df2_date_summary %>% 
-                                 rename(sas = value),
+                                 rename(qc = value),
                                by=c("name","fn")) %>% 
     dplyr::select(name,fn,everything()) %>% 
     mutate_if(is.numeric,~round(.,1))
@@ -131,7 +135,7 @@ summary_check_state <- function(r_data,df2_data,r_cols,df2_cols,name_format="{co
   date_comparison <- left_join(r_date_summary %>% 
                                  rename(r = value),
                                df2_date_summary %>% 
-                                 rename(sas = value),
+                                 rename(qc = value),
                                by=c("name","fn","state")) %>% 
     dplyr::select(name,fn,everything()) %>% 
     mutate_if(is.numeric,~round(.,1))
@@ -176,7 +180,7 @@ summary_check_county <- function(r_data,df2_data,r_cols,df2_colsname_format="{co
   date_comparison <- left_join(r_date_summary %>% 
                                  rename(r = value),
                                df2_date_summary %>% 
-                                 rename(sas = value),
+                                 rename(qc = value),
                                by=c("name","fn","state","county")) %>% 
     dplyr::select(name,fn,everything()) %>% 
     mutate_if(is.numeric,~round(.,1))

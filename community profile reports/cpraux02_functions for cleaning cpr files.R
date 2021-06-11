@@ -139,6 +139,8 @@ national_historic_nskip <- function(file_name){
   
 }
 
+file_name = "Community_Profile_Report_20210609_Public.xlsx"
+
 national_cpr <- function(file_name){
   path_cpr_raw <- paste0(path_c19dashboard_shared_folder,"/Data/Raw/Community Profile Reports")
   path_cpr_processed <- paste0(path_c19dashboard_shared_folder,"/Data/Processed/Community Profile Reports")
@@ -159,6 +161,10 @@ national_cpr <- function(file_name){
   
   colname_df <- colname_df %>% 
     mutate(header = str_replace(header,"\\.\\.[0-9]+",NA_character_)) %>% 
+    
+    # Patch for first row being missing ------
+    mutate(header = case_when(trimws(colname) == "End Date" & is.na(header) ~ "DATE",
+                              TRUE ~ header)) %>% 
     
     # Different from other cpr cleaning functions since Date is the first variable ----
     mutate(header = c(zoo::na.locf(header))) %>% 
