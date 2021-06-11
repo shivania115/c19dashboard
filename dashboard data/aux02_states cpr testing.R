@@ -38,39 +38,7 @@ mutate(percentPositiveDaily = percentPositiveDaily*100,
        percent7dayhospDaily = percent7dayhospDaily*100) %>% 
   
   # Skipping ahead to code_Jithin.R >> Lines 365
-  mutate(positivetoday = testsDaily*percentPositiveDaily/100) %>% 
-  
-  # CHECK Imputing so that cumsum doesn't give NA ---------
-mutate(testsDaily_imputed = case_when(is.na(testsDaily) ~ 0,
-                                      TRUE ~ testsDaily),
-       positivetoday_imputed = case_when(is.na(positivetoday) ~ 0,
-                                         TRUE ~ positivetoday),
-       hospDaily_imputed = case_when(is.na(hospDaily) ~ 0,
-                                     TRUE ~ hospDaily)) %>% 
-  
-  # IMPORTANT: Describe ---------
-mutate(# Line 367-369: final_hosptest_ts3<-final_hosptest_ts2 %>%   group_by(statename)%>% mutate(totaltests = cumsum(totaltests))
-  totaltests = cumsum(testsDaily_imputed),
-  
-  # Line 370-372: final_hosptest_ts3<-final_hosptest_ts3 %>% group_by(statename)%>%  mutate(positivetoday = cumsum(positivetoday))
-  # Used another variable 'totalpositives'
-  totalpositives = cumsum(positivetoday_imputed),
-  
-  # Hospitalized_Cases__Cumulative_
-  hospTot = cumsum(hospDaily_imputed)
-) %>% 
-  mutate(percentPositive = totalpositives*100/totaltests) %>%
-  # CHECK What is getting removed here? ---------
-  # Line 208: final_hosptest_ts3<-final_hosptest_ts3[,-c(12)]
-  arrange(statename,date) %>% 
-  tidyr::complete(nesting(statename,state),date = seq(min(date),max(date),by="day")) %>% 
-  group_by(statename) %>% 
-  mutate_at(vars(percentPositive,totaltests,totalpositives
-                 # CHECK: Lines 220-228: Is it correct to lag? -------
-                 # hospDaily, percent7dayhospDaily,hospAdmissionper100beds,
-                 # testsPer100K
-                 ),function(x) case_when(is.na(x) ~ dplyr::lag(x),
-                                         TRUE ~ x))
+  mutate(positivetoday = testsDaily*percentPositiveDaily/100) 
 
 # SAVE states_cpr_testing ---------
 saveRDS(states_cpr_testing,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Hospitalizations and testing/states_cpr_testing.RDS"))

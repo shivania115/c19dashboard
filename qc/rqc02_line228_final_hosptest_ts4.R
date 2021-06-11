@@ -87,12 +87,17 @@ View(r_df %>% dplyr::filter(state==19))
 
 View(qc_df %>% dplyr::filter(state==42) %>% dplyr::select(date,one_of(c("positive","negative",
                                                                         "recovered","hospTot",
+                                                                        "positivetoday","testsDaily",
                                                                         "hospDaily","totaltests",
                                                                         "percentPositive")))) 
 View(r_df %>% dplyr::filter(state==42)%>% dplyr::select(date,one_of(c("positive","negative",
                                                                       "recovered","hospTot",
+                                                                      "positivetoday","testsDaily",
                                                                       "hospDaily","totaltests",
                                                                       "percentPositive")))) 
+
+# positive, negative, recovered, hospTot: Come from series_hosptest.RDS (from covidtrackingproject)
+# They don't have values after 7th march
 
 
 
