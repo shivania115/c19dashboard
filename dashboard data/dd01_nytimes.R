@@ -140,7 +140,8 @@ mean7day_current <- bind_rows(
   dplyr::filter(date == Sys.Date()-1) %>% 
   dplyr::filter(!state %in% c(66, 69, 72, 78)) %>% 
   dplyr::select(date,state,county,nation,
-                dailydeaths,mean7daydeaths,
+                dailycases,mean7daycases,
+                dailydeaths,mean7daydeaths
                 ) %>%
   
   # CHECK - What is this for? =============
