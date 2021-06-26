@@ -44,7 +44,7 @@ vaccination_ts_cleaned <- vaccination_ts %>%
 
 saveRDS(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.RDS"))
 write.csv(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.csv"),row.names=FALSE)
-haven::write_dta(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.dta"),version=12)
+# haven::write_dta(vaccination_ts_cleaned,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/vaccination_ts_cleaned.dta"),version=12)
 write.csv(head(vaccination_ts_cleaned,n=1000),
           paste0(path_c19dashboard_shared_folder,"/Data/Processed/Vaccinations/EXAMPLE_vaccination_ts_cleaned.csv"),
           row.names = FALSE)

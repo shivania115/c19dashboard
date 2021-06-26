@@ -117,6 +117,12 @@ state_cpr <- function(file_name){
   
   df$date_of_file = lubridate::ymd(date_of_file) - 1
   unique_date_ranges$date_of_file = lubridate::ymd(date_of_file) - 1
+  
+  if(class(df$S03) == "numeric"){
+    df$S03 <- paste0("Region ",df$S03)
+  }
+  
+  
   return(list(df,unique_date_ranges,error_list))
   
   
