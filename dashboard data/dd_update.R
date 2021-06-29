@@ -1,7 +1,7 @@
 
 # viewing interim datasets
 
-view_data = TRUE
+view_data = FALSE
 
 # Saves nothing
 source(paste0(path_c19dashboard_repo,"/dashboard data/dd01_nytimes.R"))

@@ -9,7 +9,32 @@ racdemog <-
   select(race_eth_new,col_per_Grand_Total) %>% 
   dplyr::rename(percentPop=col_per_Grand_Total)
 
-population_all <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC_Urban_Rural/population_all.RDS"))  
+# Includes county population -------
+population_all <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/CDC_Urban_Rural/population_all.RDS"))
+
+# Includes population by race for state and nation ---------
+population_by_race <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,"/Data/Raw/US Census 2019 Population/Census_Single-RacePopulationEstimatesSTATES_2019.xlsx"),
+                                         sheet = "Import") %>% 
+  mutate(nation = NA) %>% 
+  rename(state = 'States Code') %>% 
+  bind_rows(readxl::read_excel(paste0(path_c19dashboard_shared_folder,"/Data/Raw/US Census 2019 Population/Census_Single-RacePopulationEstimatesNATION_2019.xlsx"),
+                               sheet = "Import") %>% 
+              mutate(nation = 1,
+                     States = "United States",
+                     state = NA)) %>% 
+  mutate(race_eth_new = case_when(Ethnicity == "Hispanic or Latino" ~ "Hispanic",
+                                  Race == "American Indian or Alaska Native" ~ "Non-Hispanic American Native",
+                                  Race == "Asian" ~ "Non-Hispanic Asian",
+                                  Race == "Black or African American" ~ "Non-Hispanic African American",
+                                  Race == "Native Hawaiian or Other Pacific Islander" ~ "Non-Hispanic NHPI",
+                                  Race == "White" ~ "Non-Hispanic White",
+                                  Race == "More than one race" ~ "Non-Hispanic Multiple/Other",
+                                  TRUE ~ Race)) %>% 
+  group_by(nation,States,state,race_eth_new) %>% 
+  summarize(Population = sum(Population,na.rm=TRUE)) %>% 
+  dplyr::select(nation,States,state,race_eth_new,Population)
+
+
 # US -------------
 
 deathdata <- jsonlite::fromJSON("https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=demographic_charts")[[7]] %>% 
@@ -36,10 +61,13 @@ deathdata <- jsonlite::fromJSON("https://covid.cdc.gov/covid-data-tracker/COVIDD
          availableDeaths = case_when(demographic == "Unknown" ~ floor((1-(deaths/totaldeaths))*100),
                                      TRUE ~ NA_real_))
 
+
+
+
 # STATE -----------
 stateDeath <-read.csv("https://data.cdc.gov/api/views/pj7m-y5uh/rows.csv?accessType=DOWNLOAD") %>% 
   dplyr::filter(Group == "By Total") %>% 
-  dplyr::select(Data.as.of,State,Indicator,contains("Hispanic")) %>% 
+  dplyr::select(Data.as.of,End.Date,State,Indicator,contains("Hispanic")) %>% 
   pivot_longer(cols=matches("(Hispanic|Other)"),
                names_to="race_ethnicity",values_to="percent") %>% 
   mutate(Indicator = case_when(Indicator == "Unweighted distribution of population (%)" ~ "pctPop",
@@ -49,18 +77,27 @@ stateDeath <-read.csv("https://data.cdc.gov/api/views/pj7m-y5uh/rows.csv?accessT
                                TRUE ~ NA_character_),
          
          race_ethnicity = str_replace_all(race_ethnicity,"\\."," ")) %>% 
-  mutate(race_ethnicity = case_when(race_ethnicity == "Non Hispanic American Indian or Alaska Native" ~ "Non Hispanic American Native",
-                                    race_ethnicity == "Non Hispanic Native Hawaiian or Other Pacific Islander" ~ "Non Hispanic NHPI",
-                                    TRUE ~ race_ethnicity)) %>% 
+  mutate(race_eth_new = case_when(race_ethnicity == "Hispanic or Latino" ~ "Hispanic",
+                                  race_ethnicity == "Non Hispanic American Indian or Alaska Native" ~ "Non-Hispanic American Native",
+                                  race_ethnicity == "Non Hispanic Asian" ~ "Non-Hispanic Asian",
+                                  race_ethnicity == "Non Hispanic Black or African American" ~ "Non-Hispanic African American",
+                                  race_ethnicity == "Non Hispanic Native Hawaiian or Other Pacific Islander" ~ "Non-Hispanic NHPI",
+                                  race_ethnicity == "Non Hispanic White" ~ "Non-Hispanic White",
+                                  race_ethnicity == "Non Hispanic more than one race" ~ "Non-Hispanic Multiple/Other",
+                                  TRUE ~ race_ethnicity)) %>% 
   pivot_wider(names_from="Indicator",values_from="percent") %>% 
   mutate(state_fips = cdlTools::fips(State)) %>% 
-  left_join(population_all %>% 
-              dplyr::filter(is.na(county)),
-            by = c("state_fips"="state")) %>% 
-  mutate(race_pop = (pctPop/100)*population) %>% 
-  mutate(death_rate = (countCovidDeaths/race_pop)*100000*(12/16))
+  dplyr::filter(State!="New York City") %>% 
+  left_join(population_by_race,
+            by = c("state_fips"="state","race_eth_new")) %>% 
+  mutate(death_rate = (countCovidDeaths/Population)*100000*(12/16))
 
-write.csv(stateDeath,paste0(path_c19dashboard_shared_folder,"/Data/Data Check/State Death Data/qc_stateDeath.csv"),row.names = FALSE)
+View(stateDeath %>% group_by(nation,state_fips,State) %>% 
+       summarize(countCovidDeaths=sum(countCovidDeaths,na.rm=TRUE),
+                                                                    Population = sum(Population,na.rm=TRUE)) %>% 
+       mutate(death_rate = (countCovidDeaths/Population)*100000*(12/16)))
+
+write.csv(stateDeath,paste0(path_c19dashboard_shared_folder,"/Data/Data Check/State Death Data/qc_stateDeath_",Sys.Date(),".csv"),row.names = FALSE)
 
 # COUNTY ------
 

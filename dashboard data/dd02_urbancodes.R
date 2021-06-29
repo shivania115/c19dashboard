@@ -17,15 +17,30 @@ urbancodes3 <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,"/Data/
   mutate(fips = as.numeric(fips)) %>% 
   mutate(urbanrural = paste0(Urbanization_Code_2013,str_replace_all(Urbanization_2013," ",""))) %>% 
   mutate_at(vars(deaths,population,crude_rate),~as.numeric(.))
+
+
+
   
 # statepopulation 3 --------------  
-statepopulation3 <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,"/Data/Raw/CDC_Urban_Rural/State_2018_pop.xlsx"),sheet="SAS") %>% 
-  dplyr::rename(statename = 'State',
-                state = 'State Code',
-                deaths = 'Deaths',
-                population = 'Population',
-                crude_rate = 'Crude Rate'
-                )
+# statepopulation3 <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,"/Data/Raw/CDC_Urban_Rural/State_2018_pop.xlsx"),sheet="SAS") %>% 
+#   dplyr::rename(statename = 'State',
+#                 state = 'State Code',
+#                 deaths = 'Deaths',
+#                 population = 'Population',
+#                 crude_rate = 'Crude Rate'
+#                 )
+
+statepopulation3 <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Census 2019 Data/PopulationData_Census2019.csv")) %>% 
+  dplyr::select(STATE,COUNTY,POPESTIMATE2019,DEATHS2019) %>% 
+  dplyr::filter(COUNTY == 0) %>% 
+  mutate(COUNTY = NA_real_,
+         crude_rate = DEATHS2019/POPESTIMATE2019) %>% 
+  rename(state = STATE,
+         county = COUNTY,
+         deaths = DEATHS2019,
+         population = POPESTIMATE2019)
+
+
 
 # nationalpop2 -----------
 nationalpop2 <- statepopulation3 %>% 
