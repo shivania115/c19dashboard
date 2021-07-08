@@ -34,36 +34,6 @@ population_by_race <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,
   summarize(Population = sum(Population,na.rm=TRUE)) %>% 
   dplyr::select(nation,States,state,race_eth_new,Population)
 
-
-# US -------------
-
-deathdata <- jsonlite::fromJSON("https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=demographic_charts")[[7]] %>% 
-  data.frame() %>% 
-  left_join(racdemog,
-            by=c("race_eth_new")) %>% 
-  mutate(race_eth_new = case_when(race_eth_new == "White, Non-Hispanic" ~ "Non-Hispanic White",
-                                  race_eth_new == "Black, Non-Hispanic"~"Non-Hispanic African American",
-                                  race_eth_new == "American Indian / Alaska Native, Non-Hispanic" ~ "Non-Hispanic American Native",
-                                  race_eth_new == "Asian, Non-Hispanic" ~ "Non-Hispanic Asian",
-                                  race_eth_new == "Native Hawaiian / Other Pacific Islander, Non-Hispanic" ~ "Non-Hispanic NHPI",
-                                  race_eth_new == "Multiple/Other, Non-Hispanic"~"Non-Hispanic Multiple/Other",
-                                  race_eth_new == "Hispanic/Latino" ~ "Hispanic",
-                                  TRUE ~ "Unknown")) %>% 
-  select(Demographic,race_eth_new,Grand_Total,col_per_Grand_Total,percentPop) %>%
-  dplyr::rename(demographicVar=Demographic,
-                demographic=race_eth_new,
-                deaths=Grand_Total,
-                percentDeaths=col_per_Grand_Total) %>% 
-  mutate(totaldeaths = sum(deaths),
-         demographicVar="race",
-         missingDeaths = case_when(demographic == "Unknown" ~ ceiling(deaths*100/totaldeaths),
-                                   TRUE ~ NA_real_),
-         availableDeaths = case_when(demographic == "Unknown" ~ floor((1-(deaths/totaldeaths))*100),
-                                     TRUE ~ NA_real_))
-
-
-
-
 # STATE -----------
 stateDeath <-read.csv("https://data.cdc.gov/api/views/pj7m-y5uh/rows.csv?accessType=DOWNLOAD") %>% 
   dplyr::filter(Group == "By Total") %>% 
@@ -90,12 +60,13 @@ stateDeath <-read.csv("https://data.cdc.gov/api/views/pj7m-y5uh/rows.csv?accessT
   dplyr::filter(State!="New York City") %>% 
   left_join(population_by_race,
             by = c("state_fips"="state","race_eth_new")) %>% 
-  mutate(death_rate = (countCovidDeaths/Population)*100000*(12/16))
+  mutate(death_rate = (countCovidDeaths/Population)*100000,
+         death_rate_annualized = (countCovidDeaths/Population)*100000*(12/16))
 
 View(stateDeath %>% group_by(nation,state_fips,State) %>% 
        summarize(countCovidDeaths=sum(countCovidDeaths,na.rm=TRUE),
                                                                     Population = sum(Population,na.rm=TRUE)) %>% 
-       mutate(death_rate = (countCovidDeaths/Population)*100000*(12/16)))
+       mutate(death_rate = (countCovidDeaths/Population)*100000))
 
 write.csv(stateDeath,paste0(path_c19dashboard_shared_folder,"/Data/Data Check/State Death Data/qc_stateDeath_",Sys.Date(),".csv"),row.names = FALSE)
 
@@ -133,3 +104,28 @@ countydeathsrace <- read.csv("https://data.cdc.gov/api/views/k8wy-p9cg/rows.csv?
   
 
 
+# US -------------
+
+deathdata <- jsonlite::fromJSON("https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=demographic_charts")[[7]] %>% 
+  data.frame() %>% 
+  left_join(racdemog,
+            by=c("race_eth_new")) %>% 
+  mutate(race_eth_new = case_when(race_eth_new == "White, Non-Hispanic" ~ "Non-Hispanic White",
+                                  race_eth_new == "Black, Non-Hispanic"~"Non-Hispanic African American",
+                                  race_eth_new == "American Indian / Alaska Native, Non-Hispanic" ~ "Non-Hispanic American Native",
+                                  race_eth_new == "Asian, Non-Hispanic" ~ "Non-Hispanic Asian",
+                                  race_eth_new == "Native Hawaiian / Other Pacific Islander, Non-Hispanic" ~ "Non-Hispanic NHPI",
+                                  race_eth_new == "Multiple/Other, Non-Hispanic"~"Non-Hispanic Multiple/Other",
+                                  race_eth_new == "Hispanic/Latino" ~ "Hispanic",
+                                  TRUE ~ "Unknown")) %>% 
+  select(Demographic,race_eth_new,Grand_Total,col_per_Grand_Total,percentPop) %>%
+  dplyr::rename(demographicVar=Demographic,
+                demographic=race_eth_new,
+                deaths=Grand_Total,
+                percentDeaths=col_per_Grand_Total) %>% 
+  mutate(totaldeaths = sum(deaths),
+         demographicVar="race",
+         missingDeaths = case_when(demographic == "Unknown" ~ ceiling(deaths*100/totaldeaths),
+                                   TRUE ~ NA_real_),
+         availableDeaths = case_when(demographic == "Unknown" ~ floor((1-(deaths/totaldeaths))*100),
+                                     TRUE ~ NA_real_))

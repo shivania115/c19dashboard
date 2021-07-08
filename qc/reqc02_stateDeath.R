@@ -24,6 +24,9 @@ population_by_race <- readxl::read_excel(paste0(path_c19dashboard_shared_folder,
 
 # STATE FROM NYTIMES -----------
 covidtimeseries <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/NYT Covid19 data/covidtimeseries00.RDS")) %>% 
+  dplyr::filter(nation==1,date =="2021-06-19")
+
+covidtimeseries <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/NYT Covid19 data/covidtimeseries00.RDS")) %>% 
   dplyr::filter(lubridate::year(date) == 2021,is.na(county))  %>%
   dplyr::filter(date <= "2021-06-19") %>% 
   mutate(min_date = min(date),max_date = max(date)) %>% 
