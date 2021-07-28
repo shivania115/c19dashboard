@@ -35,7 +35,7 @@ vaccination_ts_cleaned <- vaccination_ts %>%
          state = substr(fips,1,2) %>% as.numeric(),
          county = substr(fips,3,5) %>% as.numeric()) %>% 
   mutate(fips = as.numeric(fips)) %>% 
-  rename(countycode = fips) %>% 
+  dplyr::rename(countycode = fips) %>% 
   left_join(countynames,
             by = c("nation","state","county"))
 
