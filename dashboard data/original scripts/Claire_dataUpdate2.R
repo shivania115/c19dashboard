@@ -1344,7 +1344,7 @@ b<-names(casesdata)
 setdiff(b,a)
 a
 b
-
+VaccineTracker<-VaccineTracker[,-29]
 
 
 VaccineTracker1<-rbind(VaccineTracker,casesdata)
@@ -1544,3 +1544,13 @@ setwd(onedrive)
 
 write.csv(z,"./Data/Upload/nationalraw.csv",row.names=FALSE,na="")
 
+
+
+#install.packages("cronR")
+#library(cronR)
+#daily_update<-"/Users/air/Downloads/Claire_dataUpdate.R"
+#cmd <- cron_rscript(daily_update)
+#cron_add(command = cmd, frequency = 'daily')
+#0 */23 * * * Rscript /Users/air/Downloads/Claire_dataUpdate.R
+#1 */0 * * * Rscript /Users/air/Downloads/Claire_dataUpdate.R
+#0 13 * * * Rscript /Users/air/Downloads/Claire_dataUpdate.R
