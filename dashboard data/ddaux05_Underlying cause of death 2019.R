@@ -7,7 +7,8 @@ cause_of_death <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Cen
                 SingleYearAgesCode = 'Single.Year.Ages.Code',
                 deaths = Deaths,
                 population = Population,
-                CrudeRate = 'Crude.Rate')
+                CrudeRate = 'Crude.Rate') %>% 
+  mutate(county = substr(county,3,5) %>% as.numeric(.))
 
 saveRDS(cause_of_death,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Census 2019 Data/Underlying Cause of Death, GA 2019.RDS"))
 writexl::write_xlsx(cause_of_death,paste0(path_c19dashboard_shared_folder,"/Data/Processed/Census 2019 Data/Underlying Cause of Death, GA 2019.xlsx"))

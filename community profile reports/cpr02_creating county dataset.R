@@ -52,11 +52,12 @@ date_range_clean <- date_range_clean %>%
   dplyr::select(-Level,-header) %>% 
   pivot_wider(names_from = "variable",values_from="daterange")
 
-date_range_clean <- date_range_clean[,gtools::mixedsort(colnames(date_range_clean))]
+date_range_clean <- date_range_clean[,gtools::mixedsort(colnames(date_range_clean))] %>% 
+  mutate_at(vars(one_of("NA"),starts_with("VH")),~as.character(.))
 
 df_clean <- df_clean %>% 
   left_join(date_range_clean,
-            by=c("date_of_file","file_name"))
+            by=c("date_of_file","file_name")) 
 
 
 # date_range_clean <- readRDS(paste0(path_cpr_processed,folder_name,"/counties_date_range_clean.RDS"))

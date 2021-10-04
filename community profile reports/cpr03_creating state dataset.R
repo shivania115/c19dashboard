@@ -38,7 +38,8 @@ states_date_range_clean <- states_date_range_clean %>%
   dplyr::select(-Level,-header) %>% 
   pivot_wider(names_from = "variable",values_from="daterange")
 
-states_date_range_clean <- states_date_range_clean[,gtools::mixedsort(colnames(states_date_range_clean))]
+states_date_range_clean <- states_date_range_clean[,gtools::mixedsort(colnames(states_date_range_clean))]  %>% 
+  mutate_at(vars(one_of("NA"),starts_with("SH")),~as.character(.))
 
 states_df_clean <- states_df_clean %>% 
   left_join(states_date_range_clean,
