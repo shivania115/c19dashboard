@@ -4,12 +4,13 @@
 
 
 *Month and day of current downloand;
-%let month=03;
-%let day=22;
+%let month=10;
+%let day=04;
 %let year=2021;
 *Data directory - shivani; 
-%let datadir = L:\COVID19_data_shared;
 
+%let onedrive=C:\Users\china\OneDrive - Emory University\CovidHealthEquityDashboard\Data;
+%let datadir=C:\Users\china\Downloads\data;  *datadir is your preferred local path;
 *================= CODE TO IMPORTING Datasets FOR COUNTY DASHBOARD ==================;
 
 * Data set list
@@ -21,14 +22,6 @@
 4. CDC SVI
 5. SAHIE
 ;
-
-*Daesung's Emory Virtual desktop;
-*%let datadir = H:\COVID-Dashboard\Data;
-
-
-*%let datadir = H:\COVID-Dashboard;
-
-
 *================= COVID DEATHS =======================================;
 *data inputs: NYTimes COVID deaths by states and county - as of May 2;
 *data can be found at:
@@ -98,23 +91,25 @@
 			where county=.;
 			var date state cases deaths;
 			run;
-
-PROC EXPORT DATA= WORK.covid_all 
-            OUTFILE= "&datadir.\covid_all.csv" 
-            DBMS=CSV REPLACE;
-     PUTNAMES=YES;
-RUN;
-
-proc import datafile = "O:\CovidHealthEquityDashboard\Data\Processed\iowa.csv" out = iowa
+*
+PROC EXPORT DATA= WORK.covid_all ;
+           * OUTFILE= "&datadir.\covid_all.csv" ;
+           * DBMS=CSV REPLACE;
+    * PUTNAMES=YES;
+*RUN; 
+*
+proc import datafile = "&onedrive.\Processed\iowa_oklahoma.csv" out = iowa
 DBMS =  csv replace;
-run;
-proc sort data=iowa;by county;run;
-proc sort data=Countiesnytimes;by county;run;
+*run;
+*proc sort data=iowa;*by county;*run;
+*proc sort data=Countiesnytimes;*by county;*run;
 
-data Countiesnytimes;
-merge countiesnytimes iowa;
-run;
+*data Countiesnytimes;
+* countiesnytimes iowa;
+*run;
 
+*PROC PRINT data=iowa;
+*run;
 
 
 *=========================== daily cases data;
@@ -275,8 +270,8 @@ run;
 *https://www.cdc.gov/nchs/data_access/urban_rural.htm#update;
 *****************************************************************;
       PROC IMPORT OUT= WORK.urbancodes                         
-                        DATAFILE= "&datadir.\CDC_Urban_Rural\Urban_Rural_2013_Classification.xlsx" 
-                        DBMS=EXCEL REPLACE;
+                        DATAFILE= "&onedrive.\Raw\CDC_Urban_Rural\Urban_Rural_2013_Classification.xlsx" 
+                        DBMS=excel REPLACE;
                  RANGE="SAS$"; 
                  GETNAMES=YES;
                  MIXED=No;
@@ -284,6 +279,16 @@ run;
                  USEDATE=YES;
                  SCANTIME=YES;
             RUN;
+
+			/*
+proc import datafile = "&onedrive.\Raw\CDC_Urban_Rural\Urban_Rural_2013_Classification.csv" out = urbancodes
+DBMS =  csv replace;
+guessingrows=32767;
+run;
+			*/
+
+
+
 
 			data urbancodes2;
 			set urbancodes;
@@ -305,14 +310,14 @@ run;
 
 			annualdeaths2018=deaths;
 			annualmortality2018= crude_rate;
-			urbanrural=compress(_013_Urbanization_Code||_013_Urbanization);
-			if _013_Urbanization_Code = . then urbanrural= " ";
+			urbanrural=compress(_013_Urbanization_Code||_013_Urbanization_Code);*changed this line to make the code work;
+			if _2013_Urbanization_Code = . then urbanrural= " ";
 			drop statex countyx;
 			run;
 
 
  				PROC IMPORT OUT= WORK.statepopulation                         
-                        DATAFILE= "&datadir.\CDC_Urban_Rural\State_2018_pop.xlsx" 
+                        DATAFILE= "&onedrive.\Raw\CDC_Urban_Rural\State_2018_pop.xlsx" 
                         DBMS=EXCEL REPLACE;
                  RANGE="SAS$"; 
                  GETNAMES=YES;
@@ -321,6 +326,11 @@ run;
                  USEDATE=YES;
                  SCANTIME=YES;
             RUN;
+
+/*proc import datafile = "O:\COVID19_data_shared\CDC_Urban_Rural\State_2018_pop.csv" out = statepopulation
+DBMS =  csv replace;
+run;*/
+
 
 
 			data statepopulation2;
@@ -349,6 +359,21 @@ run;
 		keep  population state nation county;
 		run;
 
+/*
+proc compare data=urbancodes4(obs=0) compare=statepopulation3(obs=0) compare=nationalpop2(obs=0);
+run;
+data urbancodes4;
+set urbancodes3;
+Deaths1=input(Deaths,best32.);
+Population1=input(Population,best32.);
+Crude_Rate1=input(Crude_Rate,best32.);
+drop Deaths Population Crude_Rate;
+rename Deaths1=Deaths Population1=Population Crude_Rate1=Crude_Rate;
+run;
+		*/
+
+
+
 
 			data population_all;
 			set urbancodes3 statepopulation3 nationalpop2;
@@ -365,7 +390,7 @@ run;
 	proc sort data=population_all; by nation state county ; run;
 	proc sort data=covid_all; by nation state county ; run;
 	proc sort data=mean7day_current; by nation state county ; run;
-	proc sort data=testhosp5; by nation state county ; run;
+	
 
 	data covid_pop;
 	merge population_all covid_all (in=covid) mean7day_current ;
@@ -437,10 +462,10 @@ run;
 			var cases  caserate  casesfig  caseratefig  ;
 			run;
 
-			proc means data =covid_popn nmiss min max mean;
-			where dailycases in (0 .) ;
-			var caserate7day caserate7dayfig;
-			run;
+			*proc means data =covid_popn nmiss min max mean;
+			*where dailycases in (0 .) ;
+			*var caserate7day caserate7dayfig;
+			*run;
 
 
 			proc print data =covid_pop;
@@ -496,17 +521,25 @@ run;
     if state=0 or (nation=. and state=. and county=.) then delete;
 	run;
 
+data Covidtimeseries_pop1;
+set Covidtimeseries_pop;
+length _2013_Urbanization $100.;
+run;
+proc freq data=Covidtimeseries_pop1;
+tables _2013_Urbanization;
+run;
+
+
+
+
 
 PROC EXPORT DATA= WORK.Covidtimeseries_pop 
-            OUTFILE= "O:\CovidHealthEquityDashboard\Data\Processed\covidtimeseries00.csv" 
+            OUTFILE= "&onedrive.\Upload\covidtimeseries00.csv" 
             DBMS=CSV REPLACE;
      PUTNAMES=YES;
 RUN;
-
-
-
 PROC EXPORT DATA= WORK.Covidtimeseries_pop 
-            OUTFILE= "\\apporto.com\dfs\RSPHEmory\Users\xwan788_rsphemory\Downloads\covidtimeseries00.csv" 
+            OUTFILE= "&datadir.\covidtimeseries00.csv" 
             DBMS=CSV REPLACE;
      PUTNAMES=YES;
 RUN;
@@ -518,7 +551,7 @@ RUN;
 * Data Source: Social explorer 
 *************************************************************;
 	Data acs2018_5yr_county; 
-	set "&datadir.\ACS 2018 5yr\acs2018_5yr_county"; 
+	set "&onedrive.\raw\ACS 2018 5yr\acs2018_5yr_county"; 
 
 	popden = A00002_002;
 	age65over = (A01001_011 + A01001_012 + A01001_013) / A00001_001 * 100;
@@ -539,7 +572,7 @@ RUN;
 	run;
 
 	Data acs2018_5yr_state; 
-	set "&datadir.\ACS 2018 5yr\acs2018_5yr_state"; 
+	set "&onedrive.\raw\ACS 2018 5yr\acs2018_5yr_state"; 
 
 	popden = A00002_002;
 	age65over = (A01001_011 + A01001_012 + A01001_013) / A00001_001 * 100;
@@ -560,7 +593,7 @@ RUN;
 	run;
 
 	Data acs2018_5yr_nation; 
-	set "&datadir.\ACS 2018 5yr\acs2018_5yr_nation"; 
+	set "&onedrive.\raw\ACS 2018 5yr\acs2018_5yr_nation"; 
 
 	popden = A00002_002;
 	age65over = (A01001_011 + A01001_012 + A01001_013) / A00001_001 * 100;
@@ -602,7 +635,7 @@ RUN;
 CDC SVI 2018 Documentation - 1/31/2020
 *****************************************************************;
 	DATA svi2018_us_county;	
-	SET "&datadir.\CDC SVI\svi2018_us_county";
+	SET "&onedrive.\raw\CDC SVI\svi2018_us_county";
 	fipscode=put(FIPS,z5.);
 
 	*countyname=county;
@@ -629,7 +662,7 @@ CDC SVI 2018 Documentation - 1/31/2020
 		
 *CDC diabetes Surveilance data;
 	DATA diabetescounty1;	
-	SET "&datadir.\CDC Diabetes Surveillance\county";
+	SET "&onedrive.\raw\CDC Diabetes Surveillance\county";
 	fipscode=put(CountyFIPS,z5.);
 	countyx=(substr(fipscode,3,3))+0;
 	statex=fips;
@@ -700,7 +733,7 @@ CDC SVI 2018 Documentation - 1/31/2020
 *SAIHE Health insurance files;
 *******************************************************************;
 	data sahie_20181;
-	set "&datadir.\SAHIE\sahie_2018_new";
+	set "&onedrive.\raw\SAHIE\sahie_2018_new";
 	statex=put(statefips,8.);
 	countyx=put(countyfips,8.);
 	keep statex countyx PCTUI PCTIC;
@@ -782,20 +815,12 @@ run;
 
 
 
-		data "&datadir.\mergedsocial";
-		set mergedsocial;
-		run;
+		
+
 
 proc sort data=mergedsocial; by nation state county; run;
 		PROC EXPORT DATA= WORK.mergedsocial 
-		            OUTFILE= "&datadir.\DataUpload\Yubin\nationalraw0.csv" 
-		            DBMS=CSV REPLACE;
-		     PUTNAMES=YES;
-		RUN;
-
-proc sort data=mergedsocial; by nation state county; run;
-		PROC EXPORT DATA= WORK.mergedsocial 
-		            OUTFILE= "\\apporto.com\dfs\RSPHEmory\Users\xwan788_rsphemory\Downloads\nationalraw0.csv" 
+		            OUTFILE= "&onedrive.\Upload\nationalraw0.csv" 
 		            DBMS=CSV REPLACE;
 		     PUTNAMES=YES;
 		RUN;
@@ -858,6 +883,7 @@ proc means data=mergedsocial stackods;
 		order=_n_;
 		run;
 
+
 		proc sort data=names; by variable; run;
 		proc sort data=order; by variable; run;
 
@@ -874,17 +900,18 @@ proc means data=mergedsocial stackods;
 
 proc sort data=names2; by order; run;
 PROC EXPORT DATA= WORK.names2 
-            OUTFILE= "&datadir.\Yubin\datadescription.csv" 
+            OUTFILE= "&datadir.\datadescription.csv" 
             DBMS=CSV REPLACE;
      PUTNAMES=YES;
 RUN;
 
-proc sort data=names2; by order; run;
-PROC EXPORT DATA= WORK.names2 
-            OUTFILE= "C:\Users\SPATE41\Box\Dashboard_temp\datadescription.csv" 
+*
+proc sort data=names2; *by order; *run;
+*PROC EXPORT DATA= WORK.names2 
+            OUTFILE= "&onedrive.\Upload\datadescription.csv" 
             DBMS=CSV REPLACE;
-     PUTNAMES=YES;
-RUN;
+     *PUTNAMES=YES;
+*RUN;
 
 
 
@@ -1103,7 +1130,7 @@ xaxis labelattrs=(size=12) valueattrs=(size=12);
 format casestoday 5.1;
 run;
 
-ods pdf file = "L:\COVID19_data_shared\Visuals etc\NationalCurves.pdf";
+ods pdf file = "&onedrive.\Upload\NationalCurves.pdf";
 *Case series for the nation;
 proc sort data=plots; by date state county; run;
 proc sgplot data=plots dattrmap=attrs noautolegend;
