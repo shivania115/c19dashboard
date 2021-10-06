@@ -1,4 +1,6 @@
 
+# Used to create 'mean7daycurrent' ---------
+# Please change to appropriate date
 current_date = "2021-08-08"
 
 # up to line 500 - Covidtimeseries_pop ---------------
@@ -13,10 +15,13 @@ urbancodes3 <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/C
 
 
 covidtimeseries_pop <- covidtimeseries_pop  %>% 
-  rename_at(vars(matches("_fig")),function(x) str_replace(x,"_fig","fig")) %>%
+  rename_at(vars(matches("_fig")),
+            function(x) str_replace(x,"_fig","fig")) %>%
   left_join(urbancodes3 %>% 
-              dplyr::select(state,county,Urbanization_2013,Urbanization_Code_2013,urbanrural,
-                            annualdeaths2018,annualmortality2018,crude_rate),
+              dplyr::select(state,county,Urbanization_2013,
+                            Urbanization_Code_2013,urbanrural,
+                            annualdeaths2018,annualmortality2018,
+                            crude_rate),
             by = c("state","county"))  %>% 
   dplyr::rename(
     # countyname = county_name,

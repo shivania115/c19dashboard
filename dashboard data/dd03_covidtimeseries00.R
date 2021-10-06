@@ -34,12 +34,12 @@ covid_pop <- covid_all %>%
 
 # data checking covid_pop --------
 
-if(view_data){
-  (view_covid_pop_summary <- covid_pop %>% 
-    dplyr::select(-date,-nation,-state,-fips,-county) %>% 
-    summarize_all(.funs=function(x) mean(x %in% c(0,NA)))) %>% 
-    View()
-}
+# if(view_data){
+#   (view_covid_pop_summary <- covid_pop %>% 
+#     dplyr::select(-date,-nation,-state,-fips,-county) %>% 
+#     summarize_all(.funs=function(x) mean(x %in% c(0,NA)))) %>% 
+#     View()
+# }
 
 
 # covidtimeseries_pop ---------------

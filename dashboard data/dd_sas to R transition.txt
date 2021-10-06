@@ -1,0 +1,33 @@
+# viewing interim datasets
+
+view_data = FALSE
+
+# STEP 1. Downloads NYTIMES dataset ---------
+# Saves nothing 
+source(paste0(path_c19dashboard_repo,"/dashboard data/dd01_nytimes.R"))
+
+# Saves urbancodes (.RDS) ---------
+# No need to run dd02_urbancodes.R since it's a cross-sectional dataset 
+# source(paste0(path_c19dashboard_repo,"/dashboard data/dd02_urbancodes.R")) 
+
+# STEP 2. Saves covidtimeseries00 (.RDS) ----------
+# 1. This version of covidtimeseries00 DOES NOT have the urbanization variables from dd02_urbancodes.R
+# 2. The variable names are different for those ending with '_fig'
+# 3. Recommendation is to retain it as such unless those variables are used elsewhere
+source(paste0(path_c19dashboard_repo,"/dashboard data/dd03_covidtimeseries00.R"))
+
+# Saves mergedsocial ---------
+## dd08_mergedsocial.R pulls the relevant cross-sectional outputs and creates mergedsocial
+
+# No need to run from dd04_ to dd08_ since they are cross-sectional datasets 
+# source(paste0(path_c19dashboard_repo,"/dashboard data/dd04_acs2018_5yr.R"))
+# source(paste0(path_c19dashboard_repo,"/dashboard data/dd05_svi2018_us_county.R"))
+# source(paste0(path_c19dashboard_repo,"/dashboard data/dd06_CDC diabetes surveillance.R"))
+# source(paste0(path_c19dashboard_repo,"/dashboard data/dd07_SAIHE.R"))
+# source(paste0(path_c19dashboard_repo,"/dashboard data/dd08_mergedsocial.R"))
+
+# STEP 3. Check if variables you need to transition from SAS to R are available
+
+# urbancodes3.RDS gets merged only in dd13_final_merged_covidtimeseries.R
+# This was done since the original R code repeats the merging step
+# You might want to check if the output in covidtimeseries00.csv is the same.
