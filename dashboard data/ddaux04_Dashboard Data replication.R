@@ -1,7 +1,7 @@
 
 # Used to create 'mean7daycurrent' ---------
 # Please change to appropriate date
-current_date = "2021-08-08"
+current_date = "2021-10-11"
 
 # up to line 500 - Covidtimeseries_pop ---------------
 

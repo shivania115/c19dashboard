@@ -21,12 +21,16 @@ covid_pop <- covid_all %>%
     covidmortality = (deaths/population)*(10^5),
     caserate = (cases/population)*(10^5),
     
+    dailycaserate = (dailycases/population)*(10^5),
+    dailymortality = (dailydeaths/population)*(10^5),
+    
     covidmortality7day = (mean7daydeaths/population)*(10^5),
     caserate7day = (mean7daycases/population)*(10^5)
     
   ) %>% 
   mutate_at(vars(cases,deaths,
                 covidmortality,caserate,
+                dailycaserate,dailymortality,
                 covidmortality7day,caserate7day),
          .funs=list(fig=~case_when(. == 0 | is.na(.) | . == Inf ~ -1,
                                              TRUE ~ .)),
@@ -52,6 +56,8 @@ covidtimeseries_pop <- covidtimeseries %>%
   mutate(
     covidmortality = (deaths/population)*(10^5),
     caserate = (cases/population)*(10^5),
+    dailycaserate = (dailycases/population)*(10^5),
+    dailymortality = (dailydeaths/population)*(10^5),
     cfr = 100*(deaths/cases),
     covidmortality7day = (mean7daydeaths/population)*(10^5),
     caserate7day = (mean7daycases/population)*(10^5)
@@ -59,6 +65,7 @@ covidtimeseries_pop <- covidtimeseries %>%
   ) %>% 
   mutate_at(vars(cases,deaths,cfr,
                  covidmortality,caserate,
+                 dailycaserate,dailymortality,
                  covidmortality7day,caserate7day),
             .funs=list(fig=~case_when(. == 0 | is.na(.) | . == Inf ~ -1,
                                       TRUE ~ .)),

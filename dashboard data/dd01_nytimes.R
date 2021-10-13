@@ -139,9 +139,13 @@ mean7day_current <- bind_rows(
 )  %>% 
   dplyr::filter(date == Sys.Date()-1) %>% 
   dplyr::filter(!state %in% c(66, 69, 72, 78)) %>% 
-  dplyr::select(date,state,county,nation,
+  dplyr::select(date,state,county,nation,fips,
                 dailycases,mean7daycases,
-                dailydeaths,mean7daydeaths
+                dailydeaths,mean7daydeaths,
+                percent14dayCases,
+                percent14dayDailyCases,
+                percent14dayDeaths,
+                percent14dayDailyDeaths
                 ) %>%
   
   # CHECK - What is this for? =============
@@ -155,8 +159,12 @@ covidtimeseries <- bind_rows(
 ) %>% 
   dplyr::filter(date >= "2020-04-01") %>% 
   dplyr::filter(!state %in% c(66, 69, 72, 78)) %>% 
-  dplyr::select(date,state,county,nation,
+  dplyr::select(date,state,county,nation,fips,
                 deaths,cases,
                 dailydeaths,mean7daydeaths,
-                dailycases,mean7daycases
+                dailycases,mean7daycases,
+                percent14dayCases,
+                percent14dayDailyCases,
+                percent14dayDeaths,
+                percent14dayDailyDeaths
   )
