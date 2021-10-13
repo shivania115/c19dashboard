@@ -40,21 +40,22 @@ write.csv(head(covidtimeseries_pop,n=1000),paste0(path_c19dashboard_shared_folde
 # up to line 789 - mergedsocial -------------
 # covidtimeseries_pop <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/NYT Covid19 data/covidtimeseries_pop.RDS"))
 
-source(paste0(path_c19dashboard_repo,"/dashboard data/dd08_mergedsocial.R"))
+# source(paste0(path_c19dashboard_repo,"/dashboard data/dd08_mergedsocial.R"))
+
 
 mean7daycurrent <- covidtimeseries_pop %>% 
   dplyr::filter(date == current_date)
 
-mergedsocial <- mergedsocial %>% 
+nationalraw0 <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/mergedsocial.RDS")) %>% 
   left_join(mean7daycurrent,
             by=c("state","county","nation"))
 
 # SAVE ---------
 
-saveRDS(mergedsocial,paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/mergedsocial.RDS"))
-haven::write_sas(mergedsocial,paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/mergedsocial.sas7bdat"))
-write.csv(mergedsocial,paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/mergedsocial.csv"),row.names = FALSE)
-write.csv(head(mergedsocial,n=1000),paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/EXAMPLE_mergedsocial.csv"),row.names = FALSE)
+saveRDS(nationalraw0,paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/nationalraw0.RDS"))
+haven::write_sas(nationalraw0,paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/nationalraw0.sas7bdat"))
+write.csv(nationalraw0,paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/nationalraw0.csv"),row.names = FALSE)
+write.csv(head(nationalraw0,n=1000),paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/EXAMPLE_nationalraw0.csv"),row.names = FALSE)
 
 
 # Missing columns in mergedsocial ------
