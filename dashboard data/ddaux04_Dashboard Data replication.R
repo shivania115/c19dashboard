@@ -47,7 +47,7 @@ mean7daycurrent <- covidtimeseries_pop %>%
   dplyr::filter(date == current_date)
 
 nationalraw0 <- readRDS(paste0(path_c19dashboard_shared_folder,"/Data/Processed/mergedsocial/mergedsocial.RDS")) %>% 
-  left_join(mean7daycurrent,
+  left_join(mean7daycurrent %>% dplyr::select(-fips),
             by=c("state","county","nation"))
 
 # SAVE ---------
