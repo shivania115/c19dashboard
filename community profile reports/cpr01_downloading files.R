@@ -2,8 +2,8 @@ library(tidyverse)
 library(haven)
 library(rvest)
 library(httr)
-url = "https://beta.healthdata.gov/Health/COVID-19-Community-Profile-Report/gqxm-d9w9"
-# # cpr_url = GET("https://beta.healthdata.gov/api/views/gqxm-d9w9.json?method=opening")
+# url = "https://beta.healthdata.gov/Health/COVID-19-Community-Profile-Report/gqxm-d9w9"
+url = "https://healthdata.gov/Health/COVID-19-Community-Profile-Report/gqxm-d9w9"
 # 
 cpr_url <- read_html(url) %>%
   # html_nodes(css="attachment")
@@ -30,7 +30,9 @@ for (f in 1:nrow(b)){
 # for (f in 1:3){
   file_name = str_replace(b$file_name[f],pattern = "filename=","")
   
-  download.file(paste0("https://beta.healthdata.gov/",b$var[f]),
+  # download.file(paste0("https://beta.healthdata.gov/",b$var[f]),
+  #               destfile = paste0(path_cpr_raw,"/",file_name),mode = "wb")
+  download.file(paste0("https://healthdata.gov/",b$var[f]),
                 destfile = paste0(path_cpr_raw,"/",file_name),mode = "wb")
   
   

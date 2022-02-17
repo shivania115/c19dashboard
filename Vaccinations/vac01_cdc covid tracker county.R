@@ -12,7 +12,7 @@ f = list.files(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations"))
 f = f[regexpr("CDC_Covid Data Tracker_County Vaccination_",f)>0]
 
 vaccination_ts <- map_dfr(f,.f=function(x){read_csv(paste0(path_c19dashboard_shared_folder,"/Data/Raw/Vaccinations/",x)) %>% 
-    mutate_at(vars(contains("Series")),~as.numeric(.))})
+    mutate_at(vars(contains("Series")),~as.numeric(unlist(.)))})
 
 countynames <- read.csv(paste0(path_c19dashboard_shared_folder,"/Data/Upload/nationalraw.csv")) %>% 
   distinct(nation,state,county)
